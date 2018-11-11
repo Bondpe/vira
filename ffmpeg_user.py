@@ -40,3 +40,7 @@ class Video:
             os.system('rm /tmp/vira/%s/frame%d.png'%(self.name, self.len-1))
             self.len -= 1
         return self
+    def __imul__(self, times):
+        for x in range(times-2):
+            self += self
+        return self
