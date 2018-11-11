@@ -4,27 +4,17 @@ class Data:
     pass
 data = Data()
 data.amount = 0
-class Video:
-    def __init__(self,path,name=None):
+class Empty:
+    def __init__(self,name=None):
         self.path = path
+        self.name = str(data.amount)
         if name == None:
-            self.name = str(data.amount)
-            data.amount += 1
+            self.str = str(data.amount)
         else:
-            self.name = name
+            self.str = name
+        data.amount += 1
         os.system('mkdir /tmp/vira/%s'%self.name)
-        with open('/tmp/vira/%s/audio.aac'%self.name, 'w') as file:
-            file.write('')
-            file.close()
-        os.system('ffmpeg -r 25 -i %s /tmp/vira/%s/frame%%d.png'%(self.path,self.name))
-        num = 0
-        while True:
-            num += 1
-            try:
-                open('/tmp/vira/%s/frame%d.png'%(self.name, num))
-            except:
-                self.len = num
-                break
+        self.len = 1
     def export(self, file='out.mp4'):
         os.system('ffmpeg -i /tmp/vira/%s/frame%%d.png %s'%(self.name, file))
     def __iadd__(self,video):
@@ -44,3 +34,15 @@ class Video:
         for x in range(times-2):
             self += self
         return self
+class Video(Empty):
+    def __init__(self,path,name=None):
+        Empty.__init__(self,name)
+        os.system('ffmpeg -r 25 -i %s /tmp/vira/%s/frame%%d.png'%(self.path,self.name))
+        num = 0
+        while True:
+            num += 1
+            try:
+                open('/tmp/vira/%s/frame%d.png'%(self.name, num))
+            except:
+                self.len = num
+                break
