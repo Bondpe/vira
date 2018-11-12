@@ -6,7 +6,6 @@ data = Data()
 data.amount = 0
 class Empty:
     def __init__(self,name=None):
-        self.path = path
         self.name = str(data.amount)
         if name == None:
             self.str = str(data.amount)
@@ -37,6 +36,7 @@ class Empty:
 class Video(Empty):
     def __init__(self,path,name=None):
         Empty.__init__(self,name)
+        self.path = path
         os.system('ffmpeg -r 25 -i %s /tmp/vira/%s/frame%%d.png'%(self.path,self.name))
         num = 0
         while True:
