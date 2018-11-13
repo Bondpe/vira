@@ -4,16 +4,20 @@ from tkinter import *
 class Events:
     def __init__(self):
         self.history = []
+        self.last = []
         self.checked = True
     def was(self):
         return not self.checked
     def read(self):
         self.checked = True
-        return history[-1]
+        c = self.last
+        self.last = []
+        return c
     def __getitem__(self, i):
         return self.history[0-i]
     def append(self, event):
         self.history.append(event)
+        self.last.append(event)
         self.checked = False
 class Window:
     def __init__(self, w=700, h=400):
@@ -21,9 +25,7 @@ class Window:
         self.c = Canvas(self.tk, height=h, width=w)
         self.c.pack()
         self.c.create_text(w/2,h/2,text='loading...')
-        self.mouseL = Events()
-        self.mouseM = Events()
-        self.mouseR = Events()
+        self._update()
         self.c.create_rectangle(0, 0, w, h, fill='white')
         self.c.bind_all('<Button-1>', self._pressL)
         self.c.bind_all('<Button-2>', self._pressM)
@@ -33,9 +35,12 @@ class Window:
         self.fieldsR = []
         self.fieldsM = []
         self.fieldsL = []
+        self.lastclick = [-1,-1]
+        self.lastclickR = [-1,-1]
+        self.lastclickM = [-1,-1]
         self.oco = str#onClickOut
         self.load()
-        self.update()
+        self._update()
     def _beforeclick(self, evt):
         pass
     def _afterclick(self, evt):
@@ -51,6 +56,7 @@ class Window:
     def load(self):
         pass
     def _pressL(self, evt):
+        self.lastclick = [evt.x,evt.y]
         c = True
         self._beforeclick(evt)
         for area in self.fieldsL:
@@ -64,6 +70,7 @@ class Window:
             self.oco(evt)
         self._afterclick(evt)
     def _pressM(self, evt):
+        self.lastclickM = [evt.x,evt.y]
         self._beforeclick(evt)
         c = True
         for area in self.fieldsM:
@@ -77,6 +84,7 @@ class Window:
             self.oco(evt)
         self._afterclick(evt)
     def _pressR(self, evt):
+        self.lastclickM = [evt.x,evt.y]
         self._beforeclick(evt)
         c = True
         for area in self.fieldsR:
@@ -172,7 +180,7 @@ class MenuBtn(Window):
         if self.active == id:
             return True
         return False
-    def update(self):
+    def update(self, full=True):
         self.c.create_rectangle(0, 0, self.size[0], self.size[1], fill='white')
         for menu in self.menus:
             x1, y1, x2, y2, d, text, working, funs = menu
@@ -194,9 +202,66 @@ class MenuBtn(Window):
                     self.c.create_rectangle(x1, y2+x*20, x1+100, y2+20+x*20, fill=('lightgray' if self._overSquare(x1, y2+x*20, x1+100, y2+20+x*20) else 'white'))
                     self.c.create_text(x1+50, y2+10+x*20, text=d[x])
                 self.dropped = True
+        if full:
+           self._update()
+
+class Items(MenuBtn):
+    def __init__(self, w=1000, h=500):
+        self.items = []
+        MenuBtn.__init__(self, w, h)
+        self.items = []
+        self.keys = []
+        self.keydepend = []
+        self.keyexecuted = []
+        self.c.bind_all('<KeyPress>', self._keypress)
+        self.c.bind_all('<KeyRelease>', self._keyrelease)
+    def bind(self, keys, fun):
+        self.keydepend.append([keys, fun])
+    def _keypress(self, evt):
+        self.keys.append(evt.keycode)
+    def _keyrelease(self, evt):
+        self.keys.remove(evt.keycode)
+    def create_rectangle(self, x1, y1, x2, y2, **kwargs):
+        self.items.append(['rectangle', x1, y1, x2, y2, kwargs])
+    def create_oval(self, x1, y1, x2, y2, **kwargs):
+        self.items.append(['oval', x1, y1, x2, y2, kwargs])
+    def create_button(self, x1, y1, x2, y2, fun, **kwargs):
+        kwargs['fun'] = fun
+        self.items.append(['button', x1, y1, x2, y2, kwargs])
+    def update(self):
+        MenuBtn.update(self, False)
+        for type,x1,y1,x2,y2,kwargs in self.items:
+            if type == 'rectangle':
+                self.c.create_rectangle(x1, y1, x2, y2, **kwargs)
+            elif type == 'oval':
+                self.c.create_oval(x1, y1, x2, y2, **kwargs)
+            elif type == 'button':
+                self.c.create_rectangle(x1, y1, x2, y2, fill=('lightgray' if self._overSquare(x1, y1, x2, y2) else 'white'))
+                self.c.create_text((x1+x2)/2, (y1+y2)/2, text=kwargs['text'])
+                x,y = self.lastclick
+                if x > x1 and x < x2 and y > y1 and y < y2:
+                    kwargs['fun']((x,y))
+        self.lastclick = [-1,-1]
+        self.lastclickR = [-1,-1]
+        self.lastclickM = [-1,-1]
+        for dep in self.keydepend:
+            if len(dep[0]) == len(self.keys):
+                i = True
+                for key in dep[0]:
+                    if not key in self.keys:
+                        i = False
+                        if dep in self.keyexecuted:
+                            self.keyexecuted.remove(dep)
+                        break
+                if i and not dep in self.keyexecuted:
+                    self.keyexecuted.append(dep)
+                    dep[1](self.keys)
+            elif dep in self.keyexecuted:
+                self.keyexecuted.remove(dep)
         self._update()
+
 if __name__ == '__main__':
-    win = MenuBtn()
+    win = Items()
     def foo(evt):
         print('foo')
     def bar(evt):
@@ -205,5 +270,9 @@ if __name__ == '__main__':
         print('ispum')
     win.addMenu(0, 0, 30, 15, ['foo', 'bar', 'lorem ispum'], 'File', [foo, bar, ispum])
     win.addMenu(30, 0, 60, 15, ['b1', 'b2', 'b3'], 'Edit', [bar, foo, ispum])
+    win.create_rectangle(375, 125, 600, 375)
+    win.create_oval(375, 125, 600, 375, fill='red')
+    win.create_button(375, 375, 600, 400, foo, text='Hello')
+    win.bind([37, 24], foo)#Crtl_L-Q
     while True:
         win.update()
