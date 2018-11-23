@@ -27,11 +27,15 @@ class Window:
         self.c.create_text(w/2,h/2,text='loading...')
         self._update()
         self.c.create_rectangle(0, 0, w, h, fill='white')
-        self.c.bind_all('<Button-1>', self._pressL)
         self.c.bind_all('<Button-2>', self._pressM)
         self.c.bind_all('<Button-3>', self._pressR)
         self.c.bind_all('<Motion>', self._onmove)
         self.c.bind_all('<Leave>', self._onleave)
+        def press(evt):
+            self._pressL(evt)
+            self._onMouseRelease(evt)
+        self.c.bind_all('<ButtonRelease-1>', press)
+        self.c.bind_all('<ButtonPress-1>', self._onMouseHold)
         self.fieldsR = []
         self.fieldsM = []
         self.fieldsL = []
@@ -50,6 +54,10 @@ class Window:
         self.tk.update_idletasks()
         self.c.update()
     def _onmove(self, evt):
+        pass
+    def _onMouseRelease(self, evt):
+        pass
+    def _onMouseHold(self, evt):
         pass
     def _onleave(self, evt):
         pass
@@ -181,6 +189,7 @@ class MenuBtn(Window):
             return True
         return False
     def update(self, full=True):
+        self.c.delete('all')
         self.c.create_rectangle(0, 0, self.size[0], self.size[1], fill='white')
         for menu in self.menus:
             x1, y1, x2, y2, d, text, working, funs = menu
@@ -205,7 +214,7 @@ class MenuBtn(Window):
         if full:
            self._update()
 
-class Items(MenuBtn):
+class DrawItems(MenuBtn):
     def __init__(self, w=1000, h=500):
         self.items = []
         MenuBtn.__init__(self, w, h)
@@ -223,16 +232,25 @@ class Items(MenuBtn):
         self.keys.remove(evt.keycode)
     def create_rectangle(self, x1, y1, x2, y2, **kwargs):
         self.items.append(['rectangle', x1, y1, x2, y2, kwargs])
+        return len(self.items)-1
+    def create_text(self, x, y, text):
+        self.items.append(['text', x, y, text, 0, 0])
+        return len(self.items)-1
     def create_oval(self, x1, y1, x2, y2, **kwargs):
         self.items.append(['oval', x1, y1, x2, y2, kwargs])
+        return len(self.items)-1
     def create_button(self, x1, y1, x2, y2, fun, **kwargs):
         kwargs['fun'] = fun
         self.items.append(['button', x1, y1, x2, y2, kwargs])
-    def update(self):
+        return len(self.items)-1
+    def update(self, full=True):
         MenuBtn.update(self, False)
         for type,x1,y1,x2,y2,kwargs in self.items:
             if type == 'rectangle':
                 self.c.create_rectangle(x1, y1, x2, y2, **kwargs)
+            if type == 'text':
+                self.c.create_rectangle(x1-4*len(x2), y1+6, x1+4*len(x2), y1-6, fill='white')
+                self.c.create_text(x1, y1, text=x2)
             elif type == 'oval':
                 self.c.create_oval(x1, y1, x2, y2, **kwargs)
             elif type == 'button':
@@ -258,10 +276,57 @@ class Items(MenuBtn):
                     dep[1](self.keys)
             elif dep in self.keyexecuted:
                 self.keyexecuted.remove(dep)
-        self._update()
+        if full:
+            self._update()
 
+class Scrollbars(DrawItems):
+    def __init__(self, w=1000,h=1000):
+        DrawItems.__init__(self,w,h)
+        self.scrollbars = []
+        self.mousepressed = False
+        self.barpressed = None
+    def add_scrollbar(self, x1,y1,x2,y2, percentage, size=25):
+        self.scrollbars.append([(x1,y1),(x2,y2),percentage, size])
+        return len(self.scrollbars)-1
+    def recieve_scrollbar(self, id):
+        return self.scrollbars[id][-2]
+    def _onMouseHold(self, evt):
+        self.mousepressed = True
+        for n in range(len(self.scrollbars)):
+            pos1,pos2,perc,size = self.scrollbars[n]
+            x1,y1,x2,y2=pos1+pos2
+            if self._overSquare(x1, y1, x2, y2):
+                self.barpressed = n
+    def _onMouseRelease(self, evt):
+        self.mousepressed = False
+        self.barpressed = None
+    def update(self):
+        DrawItems.update(self, False)
+        for n in range(len(self.scrollbars)):
+            pos1,pos2,perc,size = self.scrollbars[n]
+            x1,y1,x2,y2=pos1+pos2
+            ps = size*(y2-y1)/200
+            p1, p2 = y1+ps,y2-size*(y2-y1)/200
+            if n == self.barpressed:
+                y = (self.mouseover[1]-p1)*100/(p2-p1)
+                if y > 100:
+                    y = 100
+                elif y < 0:
+                    y = 0
+                perc = y
+                self.scrollbars[n] = [pos1,pos2,perc,size]
+            pointer = p1+(p2-p1)*perc/100
+            self.c.create_rectangle(x1,y1,x2,y2)
+            self.c.create_rectangle(x1, pointer-ps, x2, pointer+ps,
+                                    fill=('#555555' if n == self.barpressed else ('lightgrey' if self._overSquare(x1, pointer-size*(y2-y1)/200, x2, pointer+size*(y2-y1)/200) else 'grey')),
+                                    outline=('#aaaaaa' if n == self.barpressed else '#222222'),
+                                    width=(3 if n == self.barpressed else 2))
+            self.c.create_line(x1+(x2-x1)//10, pointer, x2-(x2-x1)//10, pointer)
+            self.c.create_line(x1+(x2-x1)//5, pointer-ps//10, x2-(x2-x1)//5, pointer-ps//10)
+            self.c.create_line(x1+(x2-x1)//5, pointer+ps//10, x2-(x2-x1)//5, pointer+ps//10)
+        self._update()
 if __name__ == '__main__':
-    win = Items()
+    win = Scrollbars()
     def foo(evt):
         print('foo')
     def bar(evt):
@@ -274,5 +339,8 @@ if __name__ == '__main__':
     win.create_oval(375, 125, 600, 375, fill='red')
     win.create_button(375, 375, 600, 400, foo, text='Hello')
     win.bind([37, 24], foo)#Crtl_L-Q
+    bar = win.add_scrollbar(100, 100, 150, 500, 0)
+    text = win.create_text(500, 500, '0')
     while True:
+        win.items[text][3] = hex(int(win.recieve_scrollbar(bar)))
         win.update()
