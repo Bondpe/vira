@@ -15,7 +15,7 @@ class Empty:
         os.system('mkdir /tmp/vira/%s'%self.name)
         self.len = 1
     def export(self, file='out.mp4'):
-        os.system('ffmpeg -i /tmp/vira/%s/frame%%d.png %s'%(self.name, file))
+        os.system('ffmpeg -r 25 -i /tmp/vira/%s/frame%%d.png %s'%(self.name, file))
     def __iadd__(self,video):
         for num in range(video.len-1):
             frame = open('/tmp/vira/%s/frame%d.png'%(video.name,num+1),'rb').read()
@@ -32,6 +32,18 @@ class Empty:
     def __imul__(self, times):
         for x in range(times-2):
             self += self
+        return self
+    def __itruediv__(self, times):
+        os.system('mkdir /tmp/vira/%d'%(data.amount))
+        done = 0
+        n = 0
+        while done < self.len:
+            done += times
+            n += 1
+            os.system('cp /tmp/vira/%s/frame%d.png /tmp/vira/%d/frame%d.png'%(self.name, int(done)+1, data.amount, n))
+        self.len /= times
+        self.name = str(data.amount)
+        data.amount += 1
         return self
 class Video(Empty):
     def __init__(self,path,name=None):
