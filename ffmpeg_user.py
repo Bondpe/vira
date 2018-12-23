@@ -33,7 +33,7 @@ class Empty:
         for x in range(times-2):
             self += self
         return self
-    def __itruediv__(self, times):
+    def __truediv__(self, times):
         os.system('mkdir /tmp/vira/%d'%(data.amount))
         done = 0
         n = 0
