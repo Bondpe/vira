@@ -34,17 +34,15 @@ class Empty:
             self += self
         return self
     def __truediv__(self, times):
-        os.system('mkdir /tmp/vira/%d'%(data.amount))
-        done = 0
+        v = Empty()
+        done = times
         n = 0
-        while done < self.len:
-            done += times
+        while done <= self.len-1:
             n += 1
-            os.system('cp /tmp/vira/%s/frame%d.png /tmp/vira/%d/frame%d.png'%(self.name, int(done)+1, data.amount, n))
-        self.len /= times
-        self.name = str(data.amount)
-        data.amount += 1
-        return self
+            os.system('cp /tmp/vira/%s/frame%d.png /tmp/vira/%d/frame%d.png'%(self.name, int(done)+1, data.amount-1, n))
+            done += times
+        v.len = int((self.len-1) / times)+1
+        return v
 class Video(Empty):
     def __init__(self,path,name=None):
         Empty.__init__(self,name)
