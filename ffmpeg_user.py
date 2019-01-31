@@ -29,6 +29,13 @@ class Empty:
             os.system('rm /tmp/vira/%s/frame%d.png'%(self.name, self.len-1))
             self.len -= 1
         return self
+    #1, 10 - 5
+    def __sub__(self, frames):
+        new = Empty()
+        for frame in range(self.len-frames):
+            os.system('cp /tmp/vira/%s/frame%d.png /tmp/vira/%s/frame%d.png'%(self.name, frame+frames+1, new.name, frame+1))
+            new.len += 1
+        return new
     def __imul__(self, times):
         OLen = self.len-1
         for x in range(times-1):
