@@ -30,8 +30,14 @@ class Empty:
             self.len -= 1
         return self
     def __imul__(self, times):
-        for x in range(times-2):
-            self += self
+        OLen = self.len-1
+        for x in range(times-1):
+            for num in range(OLen):
+                frame = open('/tmp/vira/%s/frame%d.png'%(self.name,num+1),'rb').read()
+                file = open('/tmp/vira/%s/frame%d.png'%(self.name, self.len), 'wb')
+                file.write(frame)
+                file.close()
+                self.len += 1
         return self
     def __truediv__(self, times):
         v = Empty()
@@ -43,6 +49,10 @@ class Empty:
             done += times
         v.len = int((self.len-1) / times)+1
         return v
+    def rm(self):
+        os.system('rm -r /tmp/vira/%s'%self.name)
+        self.len = 0
+        self.name = ''
 class Video(Empty):
     def __init__(self,path,name=None):
         Empty.__init__(self,name)
@@ -56,3 +66,10 @@ class Video(Empty):
             except:
                 self.len = num
                 break
+
+class Frame(Empty):
+    def __init__(self,path,name=None):
+        Empty.__init__(self,name)
+        self.path = path
+        os.system('cp %s /tmp/vira/%s/frame1.png'%(self.path,self.name))
+        self.len = 2
