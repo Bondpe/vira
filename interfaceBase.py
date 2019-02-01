@@ -2,11 +2,16 @@
 import ffmpeg_user, os
 #-------------------------------------------------------------------------------------------------Video in editor has extra data and is different
 class Video:
-    def __init__(self, path, start=0, fromF=0, durationF=100):
+    def __init__(self, path, start=0, fromF=0, durationF=0):
         self.path = path
         self.start = start
         self.fromF = fromF
-        self.durationF = durationF
+        os.system("ffprobe %s -show_format 2>&1 | sed -n 's/duration=//p' > /tmp/vira/data"%path)
+        self.len = int(float(open('/tmp/vira/data').read())*24)
+        if durationF > 0:
+            self.durationF = durationF
+        else:
+            self.durationF = self.len
 videos = []
 Len = 1000
 
@@ -16,7 +21,7 @@ def preview(l):
             path = videos.index(v)
             frame = l-videos[path].start+videos[path].fromF+1
             string = videos[path].path
-            os.system('ffmpeg -y -r 25 -ss %d -i %s -vframes 1  /tmp/vira/prew.gif'%(frame/25, string))
+            os.system('ffmpeg -y -r 25 -ss %f -i %s -vframes 1  /tmp/vira/prew.gif'%(frame/25, string))
             return True
     return False
 
