@@ -10,6 +10,16 @@ class Video:
 videos = []
 Len = 1000
 
+def preview(l):
+    for v in videos:
+        if v.start <= l and v.start+v.durationF >= l:
+            path = videos.index(v)
+            frame = l-videos[path].start+videos[path].fromF+1
+            string = videos[path].path
+            os.system('ffmpeg -y -r 25 -ss %d -i %s -vframes 1  /tmp/vira/prew.gif'%(frame/25, string))
+            return True
+    return False
+
 def export(pathOut='out.mp4'):
     pathlist = []
     for l in range(Len):

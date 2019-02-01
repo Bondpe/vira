@@ -1,5 +1,6 @@
 #!/usr/env/python3
-from tkinter import filedialog, simpledialog
+from tkinter import filedialog, simpledialog, PhotoImage
+from PIL import Image, ImageTk
 #-------------------------------------------------------------------------------------------------Create window
 from window import Window
 editor = Window(1400, 800)
@@ -42,8 +43,24 @@ def change_f():
         return
     start = simpledialog.askinteger("Change stream data (start)", "stream start at self-frame\n(%s):"%If.videos[stream].path, initialvalue=0)-1
     If.videos[stream].fromF = start
-editor.create_down_menu(60, 0, 110, 15, 'Stream', ['Change start', 'Cut start', 'Cut duration'], [change_s, change_f, pack])
+def change_d():
+    stream = simpledialog.askinteger("Change stream data (start)", "stream #:", initialvalue=1)-1
+    if len(If.videos) <= stream:
+        return
+    start = simpledialog.askinteger("Change stream data (start)", "streams last frame\n(%s):"%If.videos[stream].path, initialvalue=0)-1
+    If.videos[stream].durationF = start
+editor.create_down_menu(60, 0, 110, 15, 'Stream', ['Change start', 'Cut start', 'Cut duration'], [change_s, change_f, change_d])
+#########################################preview
+previewImage = None
+previewFrame = 100
+oldPreviewFe = 100
+def newPreview():
+    global previewFrame
+    previewFrame = editor.mouse[0]-200
+editor.create_clicker(200, 600, 1200, 800, newPreview)
 while True:
+    editor.canvas.create_rectangle(200, 600, 1200, 800, fill='#eee')
+    editor.canvas.create_rectangle(160, 600, 200, 800, fill='#aaa')
     n = 0
     for video in If.videos:
         editor.canvas.create_rectangle(200, 600+n, 1200, 620+n, fill='#ddd')
@@ -53,4 +70,13 @@ while True:
         editor.canvas.create_text(180, 610+n, text='#'+str(n//20+1), font=('Ariel', 10))
         n += 20
     del n
+    if oldPreviewFe != previewFrame and If.preview(previewFrame):
+        img = Image.open('/tmp/vira/prew.gif')
+        img = img.resize((1000, 500), Image.ANTIALIAS)
+        editor.tk.image = previewImage = ImageTk.PhotoImage(img)
+        del img
+        oldPreviewFe = previewFrame
+    if previewImage:
+        editor.canvas.create_image((200, 100), anchor='nw', image=previewImage)
+        editor.canvas.create_line(previewFrame+200, 600, previewFrame+200, 800, fill='red')
     editor.update()

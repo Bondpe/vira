@@ -14,7 +14,7 @@ class Window:
         # mouse
         self.mouse = 0, 0
         self.canvas.bind_all('<Motion>', self._move)
-        self.canvas.bind_all('<Button-1>', self._click)
+        self.canvas.bind_all('<ButtonPress-1>', self._click)
     def _move(self, evt):
         'mouse motion reactor'
         self.mouse = evt.x, evt.y
