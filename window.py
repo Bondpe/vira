@@ -54,6 +54,9 @@ class Window:
     def del_object(self, shapeId):
         'deletes shape'
         self.shapes[shapeId][-1] = False
+    def change_object(self, shapeId, data):
+        'changes shape data'
+        self.shapes[shapeId][1] = data
     def rec_object(self, shapeId):
         'recovers shape'
         self.shapes[shapeId][-1] = True
@@ -73,6 +76,8 @@ class Window:
                 self.rec_object(ID)
         self.create_button(x1, y1, x2, y2, show, text)
     def update(self):
+        #updating
+        self.canvas.update()
         self.canvas.delete('all')
         self.canvas.create_rectangle(0, 0, self.width, self.height, fill=self.fill)
         #drawing
@@ -95,5 +100,3 @@ class Window:
                     else:
                         self.canvas.create_rectangle(x1+2, y1+2, x2-2, y2-2, fill='#ddd', outline='#ddd')
                     self.canvas.create_text((x1+x2)//2, (y1+y2)//2, text=text)
-        #updating
-        self.canvas.update()
