@@ -59,7 +59,10 @@ def save(path='saved'):
     if not SAVABLE:
         pack(path)
         return
-    path += '.savedbyviravideo'
+    if len(path) >= 17 and path[-17:] == '.savedbyviravideo':
+        pass
+    else:
+        path += '.savedbyviravideo'
     out = []
     for video in videos:
         out.append((video.start, video.fromF, video.durationF, video.path))

@@ -21,8 +21,10 @@ def openVideo():
     If.openF(path)
     projectPath = path
 def saveAsVideo():
+    global projectPath
     path = filedialog.SaveAs(editor.tk).show()
     If.save(path)
+    projectPath = path
 def saveVideo():
     global projectPath
     if projectPath == None:
