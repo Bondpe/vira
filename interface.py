@@ -29,7 +29,10 @@ def saveVideo():
         saveAsVideo()
     else:
         If.save(projectPath)
-editor.create_down_menu(0, 0, 30, 15, 'File', ['New', 'Open', 'Save', 'Save as'], [newVideo, openVideo, saveVideo, saveAsVideo])
+def exq():
+    editor.tk.destroy()
+    sys.exit()
+editor.create_down_menu(0, 0, 30, 15, 'File', ['New', 'Open', 'Save', 'Save as', 'Quit'], [newVideo, openVideo, saveVideo, saveAsVideo, exq])
 #============================ Edit
 def Add():
     path = filedialog.Open(editor.tk).show()

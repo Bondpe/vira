@@ -44,7 +44,10 @@ def export(pathOut='out.mp4'):
         out.len += 1
     out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4')
 def pack(path='packed'):
-    path += '.packedbyviravideo'
+    if len(path) >= 18 and path[-18:] == '.packedbyviravideo':
+        pass
+    else:
+        path += '.packedbyviravideo'
     out = []
     for video in videos:
         os.system('ffmpeg -y -r 25 -i %s /tmp/vira/out.avi'%(video.path))
