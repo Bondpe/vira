@@ -14,6 +14,5 @@ use scale button on bottom if working with big streams, segment if with great nu
 you can create up to an hour-long video if big enough memory card, hard drive etc.<br />
 export it [Edit>Export]<br />
 you may save [File>SaveAs] or pack [Edit>Pack] your work, and then [File>Open]<br />
-the difference: if saved, you just can't delete videos for it to work well<br />
+the difference: if saved, you just can't delete videos for it to work well, and you can't save unpacked\project, it packs instead<br />
 remember, top items on streamer are on top of everything<br />
-[File>Save] isn't working yet
