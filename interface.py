@@ -8,18 +8,27 @@ import interfaceBase as If
 import os, sys
 #-------------------------------------------------------------------------------------------------Initialise functions
 #============================ File
+projectPath = None
 def newVideo():
-    print('new file dialog')
+    global projectPath
+    If.new()
+    projectPath = None
 def openVideo():
+    global projectPath
     path = filedialog.Open(editor.tk).show()
     if path == () or path == '':
         return
     If.openF(path)
-def saveVideo():
-    print('save file function')
+    projectPath = path
 def saveAsVideo():
     path = filedialog.SaveAs(editor.tk).show()
     If.save(path)
+def saveVideo():
+    global projectPath
+    if projectPath == None:
+        saveAsVideo()
+    else:
+        If.save(projectPath)
 editor.create_down_menu(0, 0, 30, 15, 'File', ['New', 'Open', 'Save', 'Save as'], [newVideo, openVideo, saveVideo, saveAsVideo])
 #============================ Edit
 def Add():

@@ -16,6 +16,8 @@ class Video:
 videos = []
 Len = 1000
 
+SAVABLE = True
+
 def preview(l):
     for v in videos:
         if v.start <= l and v.start+v.durationF >= l:
@@ -51,6 +53,9 @@ def pack(path='packed'):
     pickle.dump(out, file)
     file.close()
 def save(path='saved'):
+    if not SAVABLE:
+        pack(path)
+        return
     path += '.savedbyviravideo'
     out = []
     for video in videos:
@@ -59,7 +64,7 @@ def save(path='saved'):
     pickle.dump(out, file)
     file.close()
 def unpack(path):
-    global videos
+    global videos, SAVABLE
     videos = []
     unpacked = pickle.load(open(path, 'rb'))
     os.system('mkdir /tmp/vira/unpacked')
@@ -70,14 +75,16 @@ def unpack(path):
         file.close()
         videos.append(Video('/tmp/vira/unpacked/%d.avi'%ID, vid[0], vid[1], vid[2]))
         ID += 1
+    SAVABLE = False
 def openV(path):
-    global videos
+    global videos, SAVABLE
     videos = []
     unpacked = pickle.load(open(path, 'rb'))
     for vid in unpacked:
         videos.append(Video(vid[3], vid[0], vid[1], vid[2]))
+    SAVABLE = True
 def openF(path):
-    global videos
+    global videos, SAVABLE
     videos = []
     unpacked = pickle.load(open(path, 'rb'))
     if len(unpacked) > 0:
@@ -90,6 +97,12 @@ def openF(path):
                 file.close()
                 videos.append(Video('/tmp/vira/unpacked/%d.avi'%ID, vid[0], vid[1], vid[2]))
                 ID += 1
+            SAVABLE = False
         else:
             for vid in unpacked:
                 videos.append(Video(vid[3], vid[0], vid[1], vid[2]))
+            SAVABLE = True
+def new():
+    global videos, SAVABLE
+    videos = []
+    SAVABLE = True
