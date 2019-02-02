@@ -11,11 +11,15 @@ import os, sys
 def newVideo():
     print('new file dialog')
 def openVideo():
-    print('open file dialog')
+    path = filedialog.Open(editor.tk).show()
+    if path == () or path == '':
+        return
+    If.openF(path)
 def saveVideo():
     print('save file function')
 def saveAsVideo():
-    print('save file dialog')
+    path = filedialog.SaveAs(editor.tk).show()
+    If.save(path)
 editor.create_down_menu(0, 0, 30, 15, 'File', ['New', 'Open', 'Save', 'Save as'], [newVideo, openVideo, saveVideo, saveAsVideo])
 #============================ Edit
 def Add():
@@ -28,7 +32,8 @@ def export():
     path = filedialog.SaveAs(editor.tk).show()
     If.export(path)
 def pack():
-    print('packing...')
+    path = filedialog.SaveAs(editor.tk).show()
+    If.pack(path)
 editor.create_down_menu(30, 0, 60, 15, 'Edit', ['Add', 'Export', 'Pack'], [Add, export, pack])
 #============================ Stream
 def change_s():
