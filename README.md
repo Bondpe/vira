@@ -7,11 +7,13 @@ git clone https://GitHub.com/bondpe/vira.git<br />
 cd vira<br />
 python3 interface.py
 # try:
-add new stream [edit>add]<br />
-edit it's position, cut it [stream>* ]<br />
+add new stream [Edit>Add]<br />
+edit it's position, cut it [Stream>* ]<br />
 play with more streams<br />
 use scale button on bottom if working with big streams, segment if with great number of them<br />
 you can create up to an hour-long video if big enough memory card, hard drive etc.<br />
-export it [edit>export]<br />
+export it [Edit>Export]<br />
+you may save [File>SaveAs] or pack [Edit>Pack] your work, and then [File>Open]<br />
+the difference: if saved, you just can't delete videos for it to work well<br />
 remember, top items on streamer are on top of everything<br />
-[File>* ] and [edit>pack] aren't working yet
+[File>Save] isn't working yet
