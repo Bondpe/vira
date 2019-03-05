@@ -25,9 +25,11 @@ Len = 1000
 SAVABLE = True
 
 
-def preview(l):
+def preview(l, effects):
     """generate preview to /tmp/vira/prew.gif"""
+    stream = 0
     for v in videos:
+        stream += 1
         if v.start <= l and v.start+v.durationF >= l:
             path = videos.index(v)
             frame = l-videos[path].start+videos[path].fromF+1
@@ -35,11 +37,13 @@ def preview(l):
             os.system(
                 'ffmpeg -y -r 25 -ss %f -i %s -vframes 1  /tmp/vira/prew.gif' %
                 (frame/25, string))
+            for effect in effects:
+                effect.apply('/tmp/vira/prew.gif', stream, l)
             return True
     return False
 
 
-def export(pathOut='out.mp4'):
+def export(pathOut='out.mp4', effects=[]):
     """export video"""
     pathlist = []
     for l in range(Len):
@@ -57,11 +61,16 @@ def export(pathOut='out.mp4'):
                    f - videos[pathlist[f][1]].start +
                    videos[pathlist[f][1]].fromF+1,
                    out.name, out.len))
+        stream = int(vids[pathlist[f][1]].name)-1
+        current_frame = out.len
         out.len += 1
+        for effect in effects:
+            effect.apply('/tmp/vira/%s/frame%d.png'%(out.name, current_frame),
+                         stream, current_frame)
     out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4')
 
 
-def pack(path='packed'):
+def pack(path='packed', effects=[]):
     """save data including videos used"""
     if path.endswith('.packedbyviravideo'):
         pass
@@ -73,16 +82,16 @@ def pack(path='packed'):
         out.append((video.start, video.fromF, video.durationF,
                     open('/tmp/vira/out.avi', 'rb').read()))
     file = open(path, 'wb')
-    pickle.dump(out, file)
+    pickle.dump([out, effects], file)
     file.close()
 
 
-def save(path='saved'):
+def save(path='saved', effects=[]):
     """save data excluding videos used"""
     if not SAVABLE:
         pack(path)
         return
-    if len(path) >= 17 and path[-17:] == '.savedbyviravideo':
+    if path.endswith('.savedbyviravideo'):
         pass
     else:
         path += '.savedbyviravideo'
@@ -90,7 +99,7 @@ def save(path='saved'):
     for video in videos:
         out.append((video.start, video.fromF, video.durationF, video.path))
     file = open(path, 'wb')
-    pickle.dump(out, file)
+    pickle.dump([out, effects], file)
     file.close()
 
 
@@ -98,7 +107,7 @@ def unpack(path):
     """open data including videos used"""
     global videos, SAVABLE
     videos = []
-    unpacked = pickle.load(open(path, 'rb'))
+    unpacked, effects = pickle.load(open(path, 'rb'))
     os.system('mkdir /tmp/vira/unpacked')
     ID = 0
     for vid in unpacked:
@@ -109,23 +118,25 @@ def unpack(path):
                             vid[0], vid[1], vid[2]))
         ID += 1
     SAVABLE = False
+    return effects
 
 
 def openV(path):
     """open data excluding videos used"""
     global videos, SAVABLE
     videos = []
-    unpacked = pickle.load(open(path, 'rb'))
+    unpacked, effects = pickle.load(open(path, 'rb'))
     for vid in unpacked:
         videos.append(Video(vid[3], vid[0], vid[1], vid[2]))
     SAVABLE = True
+    return effects
 
 
 def openF(path):
     """open data as unpack and openV relatively"""
     global videos, SAVABLE
     videos = []
-    unpacked = pickle.load(open(path, 'rb'))
+    unpacked, effects = pickle.load(open(path, 'rb'))
     if len(unpacked) > 0:
         if isinstance(unpacked[0][3], bytes):
             os.system('mkdir /tmp/vira/unpacked')
@@ -142,6 +153,7 @@ def openF(path):
             for vid in unpacked:
                 videos.append(Video(vid[3], vid[0], vid[1], vid[2]))
             SAVABLE = True
+    return effects
 
 
 def new():
