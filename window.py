@@ -21,6 +21,17 @@ class Window:
         self.mouse = 0, 0  # mouse pointer last position
         self.canvas.bind_all('<Motion>', self._move)
         self.canvas.bind_all('<ButtonPress-1>', self._click)
+        self.binds = []
+        self.pressed_keys = []
+        self.canvas.bind_all('<KeyPress>', self._keypress)
+        self.canvas.bind_all('<KeyRelease>', self._keyrelease)
+
+    def _keypress(self, evt):
+        self.pressed_keys.append(evt.keycode)
+        # print(evt.keycode)
+    def _keyrelease(self, evt):
+        if evt.keycode in self.pressed_keys:
+            self.pressed_keys.remove(evt.keycode)
 
     def _move(self, evt):
         """mouse motion reactor"""
@@ -33,7 +44,10 @@ class Window:
                 if function is None or evt.x < x1 or evt.x > x2 \
                         or evt.y < y1 or evt.y > y2:
                     continue
-                function()
+                try:
+                    function(evt.x, evt.y)
+                except TypeError:
+                    function()
 
             if display and shape == 'button':
                 x1, y1, x2, y2, function, text = data
@@ -106,6 +120,9 @@ class Window:
         self.create_button(x1, y1, x2, y2, show, text)
         # to show pre-created menu
 
+    def bind(self, fun, *keys):
+        self.binds.append((keys, fun))
+
     def update(self):
         """default update funcion"""
         # updating
@@ -113,6 +130,14 @@ class Window:
         self.canvas.delete('all')
         self.canvas.create_rectangle(0, 0, self.width, self.height,
                                      fill=self.fill)
+        # key bindings
+        for bind, fun in self.binds:
+            every = True
+            for key in bind:
+                if not key in self.pressed_keys:
+                    every = False
+            if every:
+                fun()
         # drawing
         for shape, data, display in self.shapes:
             if display:
