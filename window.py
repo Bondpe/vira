@@ -103,7 +103,7 @@ class Window:
         """create dropdown menu button"""
         ids = []
         for n in range(len(names)):
-            ids.append(self.create_button(x1, y2+n*25, x1+100, y2+n*25+25,
+            ids.append(self.create_button(x1, y2+n*10, x1+100, y2+n*10+10,
                                           functions[n], names[n]))
             self.del_object(ids[-1])
             # menu items are created and hidden
@@ -169,4 +169,4 @@ class Window:
                         self.canvas.create_rectangle(x1+2, y1+2, x2-2, y2-2,
                                                      fill='#ddd',
                                                      outline='#ddd')
-                    self.canvas.create_text((x1+x2)//2, (y1+y2)//2, text=text)
+                    self.canvas.create_text((x1+x2)//2, (y1+y2)//2, text=text, font=('Ariel', 7))

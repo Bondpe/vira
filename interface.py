@@ -7,7 +7,7 @@ from PIL import Image, ImageTk
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.0.4'
+version='0.0.5'
 editor.tk.title('vira v'+version)
 generatePreview = False
 # ---------------------------------Initialise functions
@@ -323,10 +323,10 @@ def fun():
         effects.applied_effects[-1].data[val] = simpledialog.askfloat(
         "Add image effect", val, initialvalue=1)
     effects.applied_effects[-1].stream = selected_stream
-    generatePreview = True
+    refreshPreview()
 effectFuncs.append(fun)''' % ('"'+name+'"'))
 
-editor.create_down_menu(0, 585, 200, 600, 'add', effects.names, effectFuncs)
+editor.create_down_menu(1200, 100, 1400, 115, 'add effect', effects.names, effectFuncs)
 editor.create_text(100, 107, 'Effects', fill='#555')
 visible_effects = []
 
