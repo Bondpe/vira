@@ -7,8 +7,20 @@ from PIL import Image, ImageTk
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-editor.tk.title('vira v0.0.3')
+version='0.0.4'
+editor.tk.title('vira v'+version)
+generatePreview = False
 # ---------------------------------Initialise functions
+
+
+def refreshPreview():
+        global generatePreview
+        generatePreview = True
+
+
+editor.create_clicker(400, 780, 440, 800, refreshPreview)
+
+
 # ============================ File
 projectPath = None
 
@@ -18,7 +30,8 @@ def newVideo():
     If.new()
     effects.applied_effects = []
     projectPath = None
-    editor.tk.title('vira v0.0.2')
+    editor.tk.title('vira v'+version)
+    refreshPreview()
 
 
 editor.bind(newVideo, 37, 57)
@@ -31,7 +44,9 @@ def openVideo():
         return
     effects.applied_effects = If.openF(path)
     projectPath = path
-    editor.tk.title('vira v0.0.2 - '+path)
+    editor.tk.title('vira v'+version+' - '+path)
+    refreshPreview()
+
 
 editor.bind(openVideo, 37, 32)
 
@@ -41,7 +56,7 @@ def saveAsVideo():
     path = filedialog.SaveAs(editor.tk).show()
     If.save(path, effects.applied_effects)
     projectPath = path
-    editor.tk.title('vira v0.0.2 - '+path)
+    editor.tk.title('vira v'+version+' - '+path)
 
 
 editor.bind(saveAsVideo, 37, 50, 39)
@@ -66,10 +81,6 @@ def exq():
 editor.bind(exq, 37, 24)
 
 
-editor.create_down_menu(0, 0, 30, 15, 'File',
-                        ['New',   'Open',    'Save',    'Save as',   'Quit'],
-                        [newVideo, openVideo, saveVideo, saveAsVideo, exq])
-
 # ============================ Edit
 
 
@@ -78,6 +89,7 @@ def Add():
     if path == () or path == '':
         return
     If.videos.append(If.Video(path))
+    refreshPreview()
     return
 
 
@@ -100,10 +112,8 @@ def pack():
 editor.bind(pack, 37, 33)
 
 
-editor.create_down_menu(30, 0, 60, 15, 'Edit', [
-                        'Add', 'Export', 'Pack'], [Add, export, pack])
 # ============================ Stream
-selected_stream=1
+selected_stream = 1
 streamerPos = 0
 
 
@@ -117,9 +127,75 @@ def change_start():
         "stream starts playing from environment frame\n(%s):" %
         If.videos[stream].path, initialvalue=0) - 1
     If.videos[stream].start = start
+    refreshPreview()
 
 
-editor.create_clicker(360, 780, 400, 800, change_start)
+def frame_right():
+    """move current stream one frame right"""
+    global selected_stream, streamerPos
+    stream = selected_stream+streamerPos-1
+    If.videos[stream].start += 1
+    refreshPreview()
+
+
+editor.bind(frame_right, 114)
+
+
+def frame_left():
+    """move current stream one frame left"""
+    global selected_stream, streamerPos
+    stream = selected_stream+streamerPos-1
+    If.videos[stream].start -= 1
+    refreshPreview()
+
+
+editor.bind(frame_left, 113)
+
+
+def end_right():
+    """move current stream end one frame right"""
+    global selected_stream, streamerPos
+    stream = selected_stream+streamerPos-1
+    If.videos[stream].durationF += 1
+    refreshPreview()
+
+
+editor.bind(end_right, 37, 114)
+
+
+def end_left():
+    """move current stream end frame one frame left"""
+    global selected_stream, streamerPos
+    stream = selected_stream+streamerPos-1
+    If.videos[stream].durationF -= 1
+    refreshPreview()
+
+
+editor.bind(end_left, 37, 113)
+
+
+def from_right():
+    """move current stream playFrom one frame right"""
+    global selected_stream, streamerPos
+    stream = selected_stream+streamerPos-1
+    If.videos[stream].fromF += 1
+    frame_right()
+    refreshPreview()
+
+
+editor.bind(from_right, 50, 114)
+
+
+def from_left():
+    """move current stream playFrom one frame left"""
+    global selected_stream, streamerPos
+    stream = selected_stream+streamerPos-1
+    If.videos[stream].fromF -= 1
+    frame_left()
+    refreshPreview()
+
+
+editor.bind(from_left, 50, 113)
 
 
 def change_from():
@@ -131,6 +207,7 @@ def change_from():
         "Change stream data (start)", "stream start at self-frame\n(%s):" %
         If.videos[stream].path, initialvalue=0) - 1
     If.videos[stream].fromF = start
+    refreshPreview()
 
 
 def change_len():
@@ -142,15 +219,13 @@ def change_len():
         "Change stream data (start)", "streams last frame\n(%s):" %
         If.videos[stream].path, initialvalue=0)-1
     If.videos[stream].durationF = start+If.videos[stream].start
+    refreshPreview()
 
 
-editor.create_down_menu(60, 0, 110, 15, 'Stream', [
-                        'Change start', 'Cut start', 'Cut duration'],
-                        [change_start,   change_from, change_len])
 # ~~preview
 previewImage = None
-previewFrame = 0
-oldPreviewFe = 0
+previewFrame = 1
+oldPreviewFe = 1
 streamerScale = 1
 
 
@@ -176,12 +251,17 @@ editor.create_clicker(160, 780, 200, 800, newScale)
 def newPos():
     global streamerPos
     streamerPos = simpledialog.askinteger("Streamer", "New segment")-1
+
+
 def streamerButtonUp():
     global streamerPos
     streamerPos -= 1
+
+
 def streamerButtonDown():
     global streamerPos
     streamerPos += 1
+
 
 editor.create_clicker(200, 780, 240, 800, newPos)
 editor.create_clicker(240, 780, 280, 800, streamerButtonUp)
@@ -193,18 +273,44 @@ def removeCurrentStream():
     if selected_stream > len(If.videos):
         return
     del If.videos[selected_stream-1]
+    todel = []
+    for x in range(len(effects.applied_effects)):
+        if selected_stream == effects.applied_effects[x].stream:
+            todel.append(x)
+    for x in todel:
+        del effects.applied_effects[x]
+    for x in range(len(effects.applied_effects)):
+        if selected_stream-1 < effects.applied_effects[x].stream:
+            effects.applied_effects[x].stream -= 1
+    refreshPreview()
+
 
 editor.create_clicker(320, 780, 360, 800, removeCurrentStream)
+editor.bind(removeCurrentStream, 119)
+
+
+def stream_down():
+    global selected_stream
+    if selected_stream > len(If.videos):
+        return
+    a = If.videos[selected_stream-1]
+    del If.videos[selected_stream-1]
+    If.videos.insert(selected_stream, a)
+    refreshPreview()
+
+
+editor.create_clicker(360, 780, 400, 800, stream_down)
 
 
 for n in range(9):
     exec('''def set_selected():
     global selected_stream, streamerPos
     selected_stream = %d+streamerPos
-editor.create_clicker(150, 600+n*20, 1200, 620+n*20, set_selected)'''%(n+1))
+editor.create_clicker(150, 600+n*20, 1200, 620+n*20, set_selected)''' %
+         (n + 1))
 
 
-#-------effects
+# -------effects
 editor.create_rectangle(0, 100, 200, 600, fill='#baa')
 
 effectFuncs = []
@@ -217,20 +323,52 @@ def fun():
         effects.applied_effects[-1].data[val] = simpledialog.askfloat(
         "Add image effect", val, initialvalue=1)
     effects.applied_effects[-1].stream = selected_stream
-effectFuncs.append(fun)'''%('"'+name+'"'))
+    generatePreview = True
+effectFuncs.append(fun)''' % ('"'+name+'"'))
 
 editor.create_down_menu(0, 585, 200, 600, 'add', effects.names, effectFuncs)
 editor.create_text(100, 107, 'Effects', fill='#555')
-
 visible_effects = []
+
+
 def remove_effect(x_click, y_click):
     global visible_effects
     for y, n in visible_effects:
         if y < y_click and y+40 > y_click:
             del effects.applied_effects[n]
+    refreshPreview()
+
+
 editor.create_clicker(170, 100, 200, 600, remove_effect)
 
-#------end
+
+def edit_effect(x_click, y_click):
+    global visible_effects
+    for y, n in visible_effects:
+        if y+40 < y_click and \
+        y+len(effects.applied_effects[n].vals)*20+40 > y_click:
+            value = effects.applied_effects[n].vals[(y_click-y-40)//20]
+            effects.applied_effects[n].data[value] = simpledialog.askfloat(
+                "Edit image effect", value,
+                initialvalue=effects.applied_effects[n].data[value])
+    refreshPreview()
+
+
+
+editor.create_clicker(0, 100, 170, 600, edit_effect)
+
+# ------end
+
+editor.create_down_menu(0, 0, 30, 15, 'File',
+                        ['New',   'Open',    'Save',    'Save as',   'Quit'],
+                        [newVideo, openVideo, saveVideo, saveAsVideo, exq])
+editor.create_down_menu(30, 0, 60, 15, 'Edit', [
+                        'Add', 'Export', 'Pack'], [Add, export, pack])
+editor.create_down_menu(60, 0, 110, 15, 'Stream', [
+                        'Change start', 'Cut start', 'Cut duration'],
+                        [change_start,   change_from, change_len])
+
+
 
 while True:
     if streamerPos < 0:
@@ -243,7 +381,8 @@ while True:
     p, n = 0, 0
     if selected_stream*20 > streamerPos*20:
         editor.canvas.create_rectangle(
-                150, 580+selected_stream*20-streamerPos*20, 1200, 600+selected_stream*20-streamerPos*20, fill='#00d')
+                150, 580+selected_stream*20-streamerPos*20,
+                1200, 600+selected_stream*20-streamerPos*20, fill='#00d')
     for video in If.videos:
         n = p-streamerPos*20
         if n >= 0:
@@ -260,7 +399,11 @@ while True:
                                                   video.durationF) *
                                            streamerScale, 620+n, fill='#aaf')
             editor.canvas.create_text(
-                700, 610+n, text=video.path, font=('Ariel', 5))
+                700, 610 + n, text=video.path +
+                ', from frame ' + str(video.start) +
+                ', duration: ' + str(video.durationF) +
+                ' frames, trimmed ' + str(video.fromF) +
+                ' first frames', font=('Ariel', 7))
             editor.canvas.create_rectangle(160, 600+n, 200, 620+n, fill='#aaa')
             editor.canvas.create_text(
                 180, 610+n, text='#'+str(p//20+1), font=('Ariel', 10))
@@ -280,12 +423,27 @@ while True:
     editor.canvas.create_rectangle(280, 780, 320, 800, fill='#aaa')
     editor.canvas.create_polygon(300, 795, 295, 785, 305, 785, fill='green')
     editor.canvas.create_rectangle(320, 780, 360, 800, fill='#aaa')
-    editor.canvas.create_polygon(334, 784, 336, 784, 340, 788, 344, 784, 346, 784, 346, 786, 342, 790, 346, 794, 346, 796, 344, 796, 340, 792, 336, 796, 334, 796, 334, 794, 338, 790, 334, 786, fill='red')
+    editor.canvas.create_polygon(334, 784, 336, 784, 340, 788, 344, 784,
+                                 346, 784, 346, 786, 342, 790, 346, 794,
+                                 346, 796, 344, 796, 340, 792, 336, 796,
+                                 334, 796, 334, 794, 338, 790, 334, 786,
+                                 fill='red')  # just cross form
     editor.canvas.create_rectangle(360, 780, 400, 800, fill='#aaa')
-    editor.canvas.create_text(380, 790, text='move')
+    editor.canvas.create_polygon(380, 785, 382, 787, 381, 787, 381, 789,
+                                 282, 789, 383, 788, 385, 790, 383, 792,
+                                 383, 791, 381, 791, 381, 793, 382, 793,
+                                 380, 795, 378, 793, 379, 793, 379, 791,
+                                 377, 791, 377, 792, 375, 790, 377, 788,
+                                 377, 789, 379, 789, 379, 787, 378, 787,
+                                 fill='blue')  # 3 downarrows
+    editor.canvas.create_rectangle(400, 780, 440, 800, fill='#aaa')
+    editor.canvas.create_oval(413, 783, 427, 797, fill='orange')
+    editor.canvas.create_oval(415, 785, 425, 795, fill='#aaa')
+    editor.canvas.create_polygon(422, 790, 430, 790, 426, 793, fill='orange')  # refresh
 
     # preview generator
-    if oldPreviewFe != previewFrame:
+    if oldPreviewFe != previewFrame or generatePreview:
+        generatePreview = False
         if If.preview(previewFrame, effects.applied_effects):
             img = Image.open('/tmp/vira/prew.gif')
             img = img.resize((1000, 500), Image.ANTIALIAS)
@@ -314,14 +472,36 @@ while True:
         effect_in_list += 1
         if effect.stream == selected_stream:
             visible_effects.append((120+effectN, effect_in_list))
-            editor.canvas.create_rectangle(0, 120+effectN, 200, 160+effectN+len(effect.vals)*20, fill='#aaa')
-            editor.canvas.create_rectangle(0, 120+effectN, 200, 160+effectN, fill='#fff')
+            editor.canvas.create_rectangle(0, 120+effectN, 200,
+                                           160+effectN+len(effect.vals)*20,
+                                           fill='#aaa')
+            editor.canvas.create_rectangle(0, 120+effectN,
+                                           200, 160+effectN, fill='#fff')
             effect_strings = 40
-            editor.canvas.create_text(100, 130+effectN, text=effect.__class__.__name__)
-            editor.canvas.create_polygon(184, 134+effectN, 186, 134+effectN, 190, 138+effectN, 194, 134+effectN, 196, 134+effectN, 196, 136+effectN, 192, 140+effectN, 196, 144+effectN, 196, 146+effectN, 194, 146+effectN, 190, 142+effectN, 186, 146+effectN, 184, 146+effectN, 184, 144+effectN, 188, 140+effectN, 184, 136+effectN, fill='red')
-            editor.canvas.create_text(100, 140+effectN, text=effect.__doc__, font=('Ariel', 5))
+            editor.canvas.create_text(100, 130+effectN,
+                                      text=effect.__class__.__name__)
+            editor.canvas.create_polygon(184, 134+effectN,
+                                         186, 134+effectN, 190,
+                                         138+effectN, 194, 134+effectN,
+                                         196, 134+effectN,
+                                         196, 136+effectN,
+                                         192, 140+effectN,
+                                         196, 144+effectN,
+                                         196, 146+effectN,
+                                         194, 146+effectN,
+                                         190, 142+effectN,
+                                         186, 146+effectN,
+                                         184, 146+effectN,
+                                         184, 144+effectN,
+                                         188, 140+effectN,
+                                         184, 136+effectN, fill='red')
+            editor.canvas.create_text(100, 140+effectN,
+                                      text=effect.__doc__, font=('Ariel', 5))
             for value in effect.vals:
-                editor.canvas.create_text(100, 130+effectN+effect_strings, text=value+': '+str(effect.data[value]), font=('Ariel', 5))
+                editor.canvas.create_text(100, 130+effectN+effect_strings,
+                                          text=value+': ' +
+                                          str(effect.data[value]),
+                                          font=('Ariel', 5))
                 effect_strings += 20
             effectN += effect_strings
 

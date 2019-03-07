@@ -28,7 +28,7 @@ class Window:
 
     def _keypress(self, evt):
         self.pressed_keys.append(evt.keycode)
-        # print(evt.keycode)
+        print(evt.keycode)
     def _keyrelease(self, evt):
         if evt.keycode in self.pressed_keys:
             self.pressed_keys.remove(evt.keycode)
@@ -135,6 +135,9 @@ class Window:
             every = True
             for key in bind:
                 if not key in self.pressed_keys:
+                    every = False
+            for key in self.pressed_keys:
+                if not key in bind:
                     every = False
             if every:
                 fun()

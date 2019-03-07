@@ -70,7 +70,7 @@ class RGBcorrection(Effect):
 class BrightnessCorrection(Effect):
     """basic brightness curves modifier"""
     def modify_image(self, path, frame):
-        I = np.asarray(Image.open(path))
+        I = np.asarray(Image.open(path).convert('RGB'))
         I1 = I/265
         I2 = I1**(1/self.data['brighten'])
         Io = I2 * 256
