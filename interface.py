@@ -7,7 +7,7 @@ from PIL import Image, ImageTk
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.0.6'
+version='0.0.7'
 editor.tk.title('vira v'+version)
 generatePreview = False
 # ---------------------------------Initialise functions

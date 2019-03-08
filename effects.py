@@ -90,6 +90,7 @@ supported_effects = {'hsv curves':HSVcorrection, 'RGB curves':RGBcorrection, 'br
 def add_imagemagick(name, arg):
     simpledName=name[0].upper()+name[1:].lower().replace('-', '_')
     exec('''
+global %s
 class %s(Effect):
     """imagemagick %s modifier"""
     def modify_image(self, path, frame):
@@ -97,14 +98,35 @@ class %s(Effect):
     vals = ['%s']
     vt = ['str']
 supported_effects['%s'] = %s
-'''%(simpledName, simpledName, name, arg, arg, name, simpledName))
+'''%(simpledName, simpledName, simpledName, name, arg, arg, name, simpledName))
+
+def add_imagemagick_keyframed(name, arg):
+    simpledName=name[0].upper()+name[1:].lower().replace('-', '_')
+    exec('''
+global %s_keyframed
+class %s_keyframed(Effect):
+    """imagemagick keyframed %s modifier"""
+    def modify_image(self, path, frame):
+        deg = self.data['%s']
+        frame_distance = abs(self.data['frame of max value']-frame)
+        if frame_distance < self.data['slowness']:
+            amplifier = deg/self.data['slowness']*(self.data['slowness']-frame_distance)
+            os.system('convert %%s -%s %%f %%s'%%(path, amplifier, path))
+    vals = ['%s', 'frame of max value', 'slowness']
+    vt = ['float', 'float', 'float']
+supported_effects['%s (keyframed)'] = %s_keyframed
+'''%(simpledName, simpledName, simpledName, arg, name, arg, name, simpledName))
 
 
-imagemagick_effects_more = ['charcoal radius', 'implode radius', 'rotate degrees', 'blue-shift factor', 'blur geometry', 'hough-lines geometry', 'gaussian-blur geometry', 'gamma value', 'extract geometry', 'extend geometry', 'emboss radius', 'edge radius', 'deskew threshold', 'cycle amount', 'contrast-stretch geometry', 'canny geometry', 'black-threshold value', 'brightness-contrast geometry', 'mean-shift geometry', 'median geometry', 'mode geometry', 'modulate value', 'motion-blur geometry', 'noise geometry', 'paint radius', 'perceptible epsilon', 'polaroid angle', 'posterize levels', 'radial-blur angle', 'raise value', 'segment values', 'sepia-tone threshold', 'shade degrees', 'shadow geometry', 'sharpen geometry', 'shave geometry', 'shear geometry', 'sketch geometry', 'solarize threshold', 'spread amount', 'swirl degrees', 'draw string', 'crop siseXxsizeY']
+imagemagick_effects = ['charcoal radius', 'implode radius', 'rotate degrees', 'blue-shift factor', 'blur geometry', 'hough-lines geometry', 'gaussian-blur geometry', 'gamma value', 'extract geometry', 'extend geometry', 'emboss radius', 'edge radius', 'deskew threshold', 'cycle amount', 'contrast-stretch geometry', 'canny geometry', 'black-threshold value', 'brightness-contrast geometry', 'mean-shift geometry', 'median geometry', 'mode geometry', 'modulate value', 'motion-blur geometry', 'noise geometry', 'paint radius', 'perceptible epsilon', 'polaroid angle', 'posterize levels', 'radial-blur angle', 'raise value', 'segment values', 'sepia-tone threshold', 'shade degrees', 'shadow geometry', 'sharpen geometry', 'shave geometry', 'shear geometry', 'sketch geometry', 'solarize threshold', 'spread amount', 'swirl degrees', 'draw string', 'crop siseXxsizeY']
+imagemagick_keyframing = ['charcoal radius', 'implode radius', 'rotate degrees', 'blue-shift factor', 'gamma value', 'emboss radius', 'edge radius', 'black-threshold value', 'modulate value', 'paint radius', 'perceptible epsilon', 'polaroid angle', 'radial-blur angle', 'raise value', 'segment values', 'sepia-tone threshold', 'shade degrees', 'solarize threshold', 'swirl degrees']
 
-for names in imagemagick_effects_more:
+for names in imagemagick_effects:
     name, arg = names.split(' ')
     add_imagemagick(name, arg)
+for names in imagemagick_keyframing:
+    name, arg = names.split(' ')
+    add_imagemagick_keyframed(name, arg)
 
 applied_effects = []
 

@@ -103,7 +103,7 @@ class Window:
         """create dropdown menu button"""
         ids = []
         for n in range(len(names)):
-            ids.append(self.create_button(x1, y2+n*15, x1+150, y2+n*15+15,
+            ids.append(self.create_button(x1, y2+n*10, x1+150, y2+n*10+10,
                                           functions[n], names[n]))
             self.del_object(ids[-1])
             # menu items are created and hidden
