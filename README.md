@@ -6,17 +6,22 @@ Hopefuly, not only for raspberry pi.
 git clone https://GitHub.com/bondpe/vira.git<br />
 cd vira<br />
 python3 interface.py
-# try:
-add new stream [Edit>Add]<br />
-edit it's position, cut it [Stream>* ], arrow keys, Ctrl-arrow keys, shift-arrow keys<br />
-add more streams<br />
-select them by clicking<br />
-reorder them with blue-arrows button<br />
-add effects, but they are REALLY slowing down viewport and exporting<br />
-edit effects, by clicking on value you want to edit<br />
-use scale button on bottom if working with big streams, segment if with great number of them<br />
-you can create up to an hour-long video if your memory card, hard drive etc. is big enough<br />
-export it [Edit>Export] (remove all effects for faster export)<br />
-you may save [File>SaveAs] or pack [Edit>Pack] your work, and then [File>Open]<br />
-the difference: if saved, you just can't delete video files from drive for it to work, because they aren't cloned into saved video, and you can't save unpacked project, it packs instead. Also, packing is a little bit slower<br />
-remember, top items on streamer are on top of everything<br />
+# how to use:
+run program<br />
+white rectangle on bottom is called "streamer", basically it's list of streams where top one is playing over bottom<br />
+use Shift+A or Edit>Add to create new stream from video file<br />
+you can add a lot of streams, resort them with blue 3-arrows key on bottom, delete with red X, move with arrow keys, cut with Shift+arrow keys and Ctrl+arrow keys, move&cut with Stream menu<br />
+Select stream by clicking, add effects with "add effect" menu, they should appear on pink field on the left<br />
+to delete effect use red X, to move it onto another stream, use blue arrow buttons<br />
+to change effect settings, click on "ValueName: value" text<br />
+to change effect duration and position (default: 0-infinity), click on header of effect<br />
+effects are also shown on streamer as orange lines, they are shown and sorted as in the effects area<br />
+Note: if you add too much effects, last will be intantly removed<br />
+Also, every effect is slowing down preview as well as exporting A LOT<br />
+You can navigate streamer with green arrow buttons there, click on "segm: n" button to seek to stream, click on "scale:n%" for changing streamer scale<br />
+To save your work, File>Save, File>Save As or Edit>Pack, Ctrl+S, Ctrl+Shift+S or Ctrl+P<br />
+Saving equals just linking video files to saved video, but file is smaller and opened file can be saved later<br />
+Packing copies input files into packed file, you literally can't save unpacked file<br />
+Also packing is slower, but much more stable<br />
+opening packed&saved files works the same way: using File>Open<br />
+to export your work, to save it as video file, use Edit>Export<br />
