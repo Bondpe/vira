@@ -7,7 +7,7 @@ from PIL import Image, ImageTk
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.0.5'
+version='0.0.6'
 editor.tk.title('vira v'+version)
 generatePreview = False
 # ---------------------------------Initialise functions
@@ -319,14 +319,20 @@ for name in effects.names:
 global effectFuncs
 def fun():
     effects.apply(%s)
+    n = 0
     for val in effects.applied_effects[-1].vals:
-        effects.applied_effects[-1].data[val] = simpledialog.askfloat(
-        "Add image effect", val, initialvalue=1)
+        if effects.applied_effects[-1].vt[n] == 'float':
+            effects.applied_effects[-1].data[val] = simpledialog.askfloat(
+            "Add image effect", val, initialvalue=1)
+        elif effects.applied_effects[-1].vt[n] == 'str':
+            effects.applied_effects[-1].data[val] = simpledialog.askstring(
+            "Add image effect", val, initialvalue=1)
+        n += 1
     effects.applied_effects[-1].stream = selected_stream
     refreshPreview()
 effectFuncs.append(fun)''' % ('"'+name+'"'))
 
-editor.create_down_menu(1200, 100, 1400, 115, 'add effect', effects.names, effectFuncs)
+editor.create_down_menu(1200, 0, 1400, 15, 'add effect', effects.names, effectFuncs)
 editor.create_text(100, 107, 'Effects', fill='#555')
 visible_effects = []
 
@@ -342,20 +348,56 @@ def remove_effect(x_click, y_click):
 editor.create_clicker(170, 100, 200, 600, remove_effect)
 
 
+def change_stream_effect(x_click, y_click):
+    global visible_effects
+    for y, n in visible_effects:
+        if y < y_click and y+20 > y_click:
+            effects.applied_effects[n].stream -= 1
+            if effects.applied_effects[n].stream < 1:
+                effects.applied_effects[n].stream = 1
+        if y+20 < y_click and y+40 > y_click:
+            effects.applied_effects[n].stream += 1
+    refreshPreview()
+
+
+editor.create_clicker(0, 100, 30, 600, change_stream_effect)
+
+
 def edit_effect(x_click, y_click):
     global visible_effects
     for y, n in visible_effects:
         if y+40 < y_click and \
         y+len(effects.applied_effects[n].vals)*20+40 > y_click:
             value = effects.applied_effects[n].vals[(y_click-y-40)//20]
-            effects.applied_effects[n].data[value] = simpledialog.askfloat(
-                "Edit image effect", value,
-                initialvalue=effects.applied_effects[n].data[value])
+            value_type = effects.applied_effects[n].vt[(y_click-y-40)//20]
+            if value_type == 'float':
+                effects.applied_effects[n].data[value] = simpledialog.askfloat(
+                    "Edit image effect", value,
+                    initialvalue=effects.applied_effects[n].data[value])
+            if value_type == 'str':
+                effects.applied_effects[n].data[value] = simpledialog.askstring(
+                    "Edit image effect", value,
+                    initialvalue=effects.applied_effects[n].data[value])
+        if y < y_click and y+40 > y_click:
+            val = simpledialog.askinteger(
+                "effect start", "choose new begin frame",
+                initialvalue=effects.applied_effects[n].start)
+            if val == None:
+                return
+            if val >= 0:
+                effects.applied_effects[n].start = val
+            val = simpledialog.askinteger(
+                "effect duration", "choose new duration in frames\nCancel - forever",
+                initialvalue=effects.applied_effects[n].duration)
+            if val == None:
+                effects.applied_effects[n].duration = -1
+            if val >= 0:
+                effects.applied_effects[n].duration = val
     refreshPreview()
 
 
 
-editor.create_clicker(0, 100, 170, 600, edit_effect)
+editor.create_clicker(30, 100, 170, 600, edit_effect)
 
 # ------end
 
@@ -388,16 +430,30 @@ while True:
         if n >= 0:
             editor.canvas.create_rectangle(
                 200, 600+n, 1200, 620+n, fill='#ddd')
-            editor.canvas.create_rectangle(200 + (video.start - video.fromF) *
-                                           streamerScale, 600+n,
-                                           200 + (video.start - video.fromF +
-                                                  video.len) *
-                                           streamerScale, 620+n, fill='#ffa')
-            editor.canvas.create_rectangle(200 + (video.start) *
-                                           streamerScale, 600+n,
-                                           200 + (video.start - video.fromF +
-                                                  video.durationF) *
-                                           streamerScale, 620+n, fill='#aaf')
+            e1 = (video.start - video.fromF) * streamerScale
+            if e1 < 0:
+                e1 = 0
+            if e1 > 1000:
+                e1 = 1000
+            e2 = (video.start - video.fromF + video.len) * streamerScale
+            if e2 < 0:
+                e2 = 0
+            if e2 > 1000:
+                e2 = 1000
+            editor.canvas.create_rectangle(200 + e1, 600+n,
+                                           200 + e2, 620+n, fill='#ffa')
+            e1 = video.start * streamerScale
+            if e1 < 0:
+                e1 = 0
+            if e1 > 1000:
+                e1 = 1000
+            e2 = (video.start - video.fromF + video.durationF) * streamerScale
+            if e2 < 0:
+                e2 = 0
+            if e2 > 1000:
+                e2 = 1000
+            editor.canvas.create_rectangle(200 + e1, 600+n,
+                                           200 + e2, 620+n, fill='#aaf')
             editor.canvas.create_text(
                 700, 610 + n, text=video.path +
                 ', from frame ' + str(video.start) +
@@ -463,14 +519,28 @@ while True:
     editor.canvas.create_line(previewFrame*streamerScale+200, 600,
                               previewFrame*streamerScale+200, 780,
                               fill='red')
+    editor.canvas.create_text(previewFrame*streamerScale+200, 590,
+                              text=str(int(previewFrame)), fill='red')
 
     # effects
     effectN = 0
     visible_effects = []
     effect_in_list = -1
+    effect_in_visibles = -1
     for effect in effects.applied_effects:
         effect_in_list += 1
         if effect.stream == selected_stream:
+            effect_in_visibles += 1
+            max_dur_effect = 1000/streamerScale-effect.start
+            dur_effect = effect.duration if effect.duration != -1 else max_dur_effect
+            if dur_effect > max_dur_effect:
+                dur_effect = max_dur_effect
+            editor.canvas.create_rectangle(effect.start*streamerScale+200,
+                                           600+effect_in_visibles*3,
+                                           (dur_effect+effect.start)*
+                                           streamerScale+200,
+                                           600+effect_in_visibles*3+1,
+                                           fill='orange', outline='orange')
             visible_effects.append((120+effectN, effect_in_list))
             editor.canvas.create_rectangle(0, 120+effectN, 200,
                                            160+effectN+len(effect.vals)*20,
@@ -481,8 +551,9 @@ while True:
             editor.canvas.create_text(100, 130+effectN,
                                       text=effect.__class__.__name__)
             editor.canvas.create_polygon(184, 134+effectN,
-                                         186, 134+effectN, 190,
-                                         138+effectN, 194, 134+effectN,
+                                         186, 134+effectN,
+                                         190, 138+effectN,
+                                         194, 134+effectN,
                                          196, 134+effectN,
                                          196, 136+effectN,
                                          192, 140+effectN,
@@ -495,6 +566,12 @@ while True:
                                          184, 144+effectN,
                                          188, 140+effectN,
                                          184, 136+effectN, fill='red')
+            editor.canvas.create_polygon(10, 130+effectN,
+                                         20, 130+effectN,
+                                         15, 120+effectN, fill='blue')
+            editor.canvas.create_polygon(10, 150+effectN,
+                                         20, 150+effectN,
+                                         15, 160+effectN, fill='blue')
             editor.canvas.create_text(100, 140+effectN,
                                       text=effect.__doc__, font=('Ariel', 5))
             for value in effect.vals:
@@ -503,6 +580,11 @@ while True:
                                           str(effect.data[value]),
                                           font=('Ariel', 5))
                 effect_strings += 20
+                if effectN+effect_strings > 470:
+                    del effects.applied_effects[effect_in_list]
+                    editor.canvas.create_text(700, 400, text='too many effects',
+                                              font=('Ariel', 100), fill='red')
+                    refreshPreview()
             effectN += effect_strings
 
     editor.update()  # update window data (menus etc.)

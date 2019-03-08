@@ -23,6 +23,7 @@ class Effect:
                 if self.duration == -1 or self.duration+self.start >= frame:
                     self.modify_image(path, frame)
     vals = []
+    vt = []
 
 
 class HSVcorrection(Effect):
@@ -45,6 +46,7 @@ class HSVcorrection(Effect):
         out = hsv.convert('RGB')
         out.save(path)
     vals = ['hue', 'saturate', 'brighten']
+    vt = ['float', 'float', 'float']
 
 
 class RGBcorrection(Effect):
@@ -66,6 +68,7 @@ class RGBcorrection(Effect):
                 pixels[x, y] = (r, g, b)
         rgb.save(path)
     vals = ['r', 'g', 'b']
+    vt = ['float', 'float', 'float']
 
 
 class BrightnessCorrection(Effect):
@@ -78,44 +81,10 @@ class BrightnessCorrection(Effect):
         im = Image.fromarray(np.uint8(Io))
         im.save(path)
     vals = ['brighten']
+    vt = ['float']
 
 
-class Charcoal(Effect):
-    """imagemagick charcoal modifier"""
-    def modify_image(self, path, frame):
-        os.system('convert %s -charcoal %f %s'%(path, self.data['strength'], path))
-    vals = ['strength']
-
-
-class Implode(Effect):
-    """imagemagick implode modifier"""
-    def modify_image(self, path, frame):
-        os.system('convert %s -implode %f %s'%(path, self.data['strength'], path))
-    vals = ['strength']
-
-
-class Rotate(Effect):
-    """imagemagick rotation modifier"""
-    def modify_image(self, path, frame):
-        os.system('convert %s -rotate %f %s'%(path, self.data['degrees'], path))
-    vals = ['degrees']
-
-
-class Moonlight(Effect):
-    """imagemagick blue-shift modifier"""
-    def modify_image(self, path, frame):
-        os.system('convert %s -blue-shift %f %s'%(path, self.data['factor'], path))
-    vals = ['factor']
-
-
-class Blur(Effect):
-    """imagemagick blur modifier"""
-    def modify_image(self, path, frame):
-        os.system('convert %s -blur %f %s'%(path, self.data['geometry'], path))
-    vals = ['geometry']
-
-
-supported_effects = {'hsv curves':HSVcorrection, 'RGB curves':RGBcorrection, 'brighten':BrightnessCorrection, 'charcoal':Charcoal, 'implode':Implode, 'rotate':Rotate, 'moonlight':Moonlight, 'blur':Blur}
+supported_effects = {'hsv curves':HSVcorrection, 'RGB curves':RGBcorrection, 'brighten':BrightnessCorrection}
 
 
 def add_imagemagick(name, arg):
@@ -124,25 +93,14 @@ def add_imagemagick(name, arg):
 class %s(Effect):
     """imagemagick %s modifier"""
     def modify_image(self, path, frame):
-        os.system('convert %%s -%s %%f %%s'%%(path, self.data['%s'], path))
+        os.system('convert %%s -%s %%s %%s'%%(path, self.data['%s'], path))
     vals = ['%s']
+    vt = ['str']
 supported_effects['%s'] = %s
 '''%(simpledName, simpledName, name, arg, arg, name, simpledName))
 
-add_imagemagick('brightness-contrast', 'geometry')
-add_imagemagick('black-threshold', 'value')
-add_imagemagick('canny', 'geometry')
-add_imagemagick('contrast-stretch', 'geometry')
-add_imagemagick('cycle', 'amount')
-add_imagemagick('deskew', 'threshold')
-add_imagemagick('edge', 'radius')
-add_imagemagick('emboss', 'radius')
-add_imagemagick('extend', 'geometry')
-add_imagemagick('extract', 'geometry')
-add_imagemagick('gamma', 'value')
-add_imagemagick('gaussian-blur', 'geometry')
-add_imagemagick('hough-lines', 'geometry')
-imagemagick_effects_more = ['mean-shift geometry', 'median geometry', 'mode geometry', 'modulate value', 'motion-blur geometry', 'noise geometry', 'paint radius', 'perceptible epsilon', 'polaroid angle', 'posterize levels', 'radial-blur angle', 'raise value', 'segment values', 'sepia-tone threshold', 'shade degrees', 'shadow geometry', 'sharpen geometry', 'shave geometry', 'shear geometry', 'sketch geometry', 'solarize threshold', 'spread amount', 'swirl degrees']
+
+imagemagick_effects_more = ['charcoal radius', 'implode radius', 'rotate degrees', 'blue-shift factor', 'blur geometry', 'hough-lines geometry', 'gaussian-blur geometry', 'gamma value', 'extract geometry', 'extend geometry', 'emboss radius', 'edge radius', 'deskew threshold', 'cycle amount', 'contrast-stretch geometry', 'canny geometry', 'black-threshold value', 'brightness-contrast geometry', 'mean-shift geometry', 'median geometry', 'mode geometry', 'modulate value', 'motion-blur geometry', 'noise geometry', 'paint radius', 'perceptible epsilon', 'polaroid angle', 'posterize levels', 'radial-blur angle', 'raise value', 'segment values', 'sepia-tone threshold', 'shade degrees', 'shadow geometry', 'sharpen geometry', 'shave geometry', 'shear geometry', 'sketch geometry', 'solarize threshold', 'spread amount', 'swirl degrees', 'draw string', 'crop siseXxsizeY']
 
 for names in imagemagick_effects_more:
     name, arg = names.split(' ')
@@ -153,7 +111,7 @@ applied_effects = []
 names = []
 for n in supported_effects:
     names.append(n)
+names.sort()
 def apply(n):
     global applied_effects
     applied_effects.append(supported_effects[n]())
-
