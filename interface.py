@@ -1,17 +1,17 @@
 #!/usr/env/python3
-import sys
+import sys, effects
 import interfaceBase as If
-import effects
 from tkinter import filedialog, simpledialog
 from PIL import Image, ImageTk
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.0.7'
+version='0.0.8'
 editor.tk.title('vira v'+version)
 generatePreview = False
 # ---------------------------------Initialise functions
-
+import loadEffect
+loadEffect.main(effects, editor, filedialog)
 
 def refreshPreview():
         global generatePreview
