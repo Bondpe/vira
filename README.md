@@ -2,7 +2,7 @@
 Video editor for raspberry pi.<br />
 DEVELOPMENT IN PROGRESS! Any bugs will be fixed, sorry for them.<br />
 Hopefuly, not only for raspberry pi.
-# how to use
+# how to run
 git clone https://GitHub.com/bondpe/vira.git<br />
 cd vira<br />
 python3 interface.py
@@ -25,3 +25,34 @@ Packing copies input files into packed file, you literally can't save unpacked f
 Also packing is slower, but much more stable<br />
 opening packed&saved files works the same way: using File>Open<br />
 to export your work, to save it as video file, use Edit>Export<br />
+# create own effect
+file has to look like this for now:
+```
+#viraeffect:0.0.1
+comment (only shown in file)\name\inline-documentation\
+var float:valueName,string:valueNameAnother
+|all|
+valuea=valueName**FRAME
+value=valuea*2
+#comment
+# Pixels - just r, g and b values in 3-dimensional array
+PIXELS/=value
+[valueName>Frame]
+#condition/\, \/ execute if true
+    PIXELS*=valueName
+#outside if-then
+>FRAME
+>value
+#/\ - output
+    PIXELS**=FRAME
+#   still for that same condition
+|/all|
+```
+supported operations: `+`, `-`, `*`, `/`,`**`;
+supported condition operations: `>`,`<`,`=`,`>=`,`<=`;
+supported `PIXELS` operations: `*=`,`/=`,`**=`;
+exactly 2 vars in one expression like `var=var1+var2`;
+only one var in `>var`;
+exactly 2 vars in `[var1=var2]`;
+you may always use float as var in expression/`PIXELS*=`/`[a=b]`/`>var`;
+you can't use `>PIXELS`;
