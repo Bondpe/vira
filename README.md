@@ -49,7 +49,8 @@ PIXELS/=value
 |/all|
 ```
 another example, analise pixel by pixel
-```#viraeffect:0.0.2
+```
+#viraeffect:0.0.2
 \darken(keyframed)\RGB test effect (loaded)\
 var float:darkness
 |RGB|
