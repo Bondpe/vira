@@ -48,7 +48,28 @@ PIXELS/=value
 #   still for that same condition
 |/all|
 ```
-supported operations: `+`, `-`, `*`, `/`,`**`;
+another example, analise pixel by pixel
+```#viraeffect:0.0.2
+\darken(keyframed)\RGB test effect (loaded)\
+var float:darkness
+|RGB|
+d=X%3
+[d=0]
+    R=R/darkness
+    G=0*0
+    B=0*0
+[d=1]
+    B=B/darkness
+    G=0*0
+    R=0*0
+[d=2]
+    G=G/darkness
+    R=0*0
+    B=0*0
+|/RGB|
+```
+5 additional input vars here: `R`, `G`, `B`, `X`, `Y`<br />
+supported operations: `+`, `-`, `*`, `/`,`**`=`^`, `%`;
 supported condition operations: `>`,`<`,`=`,`>=`,`<=`;
 supported `PIXELS` operations: `*=`,`/=`,`**=`;
 exactly 2 vars in one expression like `var=var1+var2`;
