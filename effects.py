@@ -71,6 +71,31 @@ class RGBcorrection(Effect):
     vt = ['float', 'float', 'float']
 
 
+class GreenScreen(Effect):
+    """basic greenscreen modifier"""
+    def modify_image(self, path, frame):
+        backgroundImg = Image.open(self.data['background']).convert('HSV')
+        background = backgroundImg.load()
+        bg_x, bg_y = backgroundImg.size
+        file = Image.open(path)
+        hsv = file.convert('HSV')
+        pixels = hsv.load()
+        x_size, y_size = hsv.size
+        for x in range(x_size):
+            for y in range(y_size):
+                h, s, v = pixels[x,y]
+                cond1 = h > self.data['h']-self.data['dh'] and h < self.data['h']+self.data['dh']
+                cond2 = s > self.data['s']/self.data['ds'] and s < self.data['s']*self.data['ds']
+                cond3 = v > self.data['v']/self.data['dv'] and v < self.data['v']*self.data['dv']
+                if cond1 and cond2 and cond3:
+                    pixels[x,y] = background[int(x/x_size*bg_x),int(y/y_size*bg_y)]
+                    print(x,y)
+        rgb = hsv.convert('RGB')
+        rgb.save(path)
+    vals = ['h', 's', 'v', 'dh', 'ds', 'dv', 'background']
+    vt = ['hue', 'saturation', 'value', 'float', 'float', 'float', 'file']
+
+
 class BrightnessCorrection(Effect):
     """basic brightness curves modifier"""
     def modify_image(self, path, frame):
@@ -84,8 +109,10 @@ class BrightnessCorrection(Effect):
     vt = ['float']
 
 
-supported_effects = {'hsv curves':HSVcorrection, 'RGB curves':RGBcorrection, 'brighten':BrightnessCorrection}
+supported_effects = {'hsv curves':HSVcorrection, 'RGB curves':RGBcorrection, 'brighten':BrightnessCorrection, 'greenscreen':GreenScreen}
 
+
+imagemagicks = {}
 
 def add_imagemagick(name, arg):
     simpledName=name[0].upper()+name[1:].lower().replace('-', '_')
@@ -94,7 +121,10 @@ global %s
 class %s(Effect):
     """imagemagick %s modifier"""
     def modify_image(self, path, frame):
-        os.system('convert %%s -%s %%s %%s'%%(path, self.data['%s'], path))
+        global imagemagicks
+        if not path in imagemagicks:
+            imagemagicks[path] = []
+        imagemagicks[path].append('-%s %%s'%%(self.data['%s']))
     vals = ['%s']
     vt = ['str']
 supported_effects['%s'] = %s
@@ -120,7 +150,27 @@ supported_effects['%s (keyframed)'] = %s_keyframed
 
 imagemagick_effects = ['charcoal radius', 'implode radius', 'rotate degrees', 'blue-shift factor', 'blur geometry', 'hough-lines geometry', 'gaussian-blur geometry', 'gamma value', 'extract geometry', 'extend geometry', 'emboss radius', 'edge radius', 'deskew threshold', 'cycle amount', 'contrast-stretch geometry', 'canny geometry', 'black-threshold value', 'brightness-contrast geometry', 'mean-shift geometry', 'median geometry', 'mode geometry', 'modulate value', 'motion-blur geometry', 'noise geometry', 'paint radius', 'perceptible epsilon', 'polaroid angle', 'posterize levels', 'radial-blur angle', 'raise value', 'segment values', 'sepia-tone threshold', 'shade degrees', 'shadow geometry', 'sharpen geometry', 'shave geometry', 'shear geometry', 'sketch geometry', 'solarize threshold', 'spread amount', 'swirl degrees', 'draw string', 'crop siseXxsizeY']
 imagemagick_keyframing = ['charcoal radius', 'implode radius', 'rotate degrees', 'blue-shift factor', 'gamma value', 'emboss radius', 'edge radius', 'black-threshold value', 'modulate value', 'paint radius', 'perceptible epsilon', 'polaroid angle', 'radial-blur angle', 'raise value', 'segment values', 'sepia-tone threshold', 'shade degrees', 'solarize threshold', 'swirl degrees']
-
+def apply_imagemagick():
+    global imagemagicks
+    for x in imagemagicks:
+        string = 'convert %s '%x
+        for arg in imagemagicks[x]:
+            string += arg
+            string += ' '
+        string += x
+        os.system(string)
+    imagemagicks = {}
+def apply_imagemagick_slow():
+    global imagemagicks
+    for x in imagemagicks:
+        string = 'convert %s '%x
+        for arg in imagemagicks[x]:
+            string += arg
+            string += ' '
+        string += x
+        string += ' &'
+        os.system(string)
+    imagemagicks = {}
 for names in imagemagick_effects:
     name, arg = names.split(' ')
     add_imagemagick(name, arg)

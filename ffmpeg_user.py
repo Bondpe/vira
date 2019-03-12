@@ -115,5 +115,5 @@ the same as empty except loads frame"""
     def __init__(self, path, name=None):
         Empty.__init__(self, name)
         self.path = path
-        os.system('cp %s /tmp/vira/%s/frame1.png' % (self.path, self.name))
+        os.system('convert "%s" /tmp/vira/%s/frame1.png' % (self.path, self.name))
         self.len = 2

@@ -37,13 +37,14 @@ def preview(l, effects):
             os.system(
                 'ffmpeg -y -r 25 -ss %f -i %s -vframes 1  /tmp/vira/prew.gif' %
                 (frame/25, string))
-            for effect in effects:
+            for effect in effects.applied_effects:
                 effect.apply('/tmp/vira/prew.gif', stream, l)
+            effects.apply_imagemagick()
             return True
     return False
 
 
-def export(pathOut='out.mp4', effects=[]):
+def export(pathOut, effects):
     """export video"""
     pathlist = []
     for l in range(Len):
@@ -64,9 +65,10 @@ def export(pathOut='out.mp4', effects=[]):
         stream = int(vids[pathlist[f][1]].name)-1
         current_frame = out.len
         out.len += 1
-        for effect in effects:
+        for effect in effects.applied_effects:
             effect.apply('/tmp/vira/%s/frame%d.png'%(out.name, current_frame),
                          stream, current_frame)
+        effects.apply_imagemagick_slow()
     out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4')
 
 

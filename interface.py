@@ -6,9 +6,10 @@ from PIL import Image, ImageTk
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.0.8'
+version='0.0.9'
 editor.tk.title('vira v'+version)
 generatePreview = False
+RGBHSV=(None, None, None, None, None, None)
 # ---------------------------------Initialise functions
 import loadEffect
 loadEffect.main(effects, editor, filedialog)
@@ -98,7 +99,7 @@ editor.bind(Add, 50, 38)
 
 def export():
     path = filedialog.SaveAs(editor.tk).show()
-    If.export(path, effects.applied_effects)
+    If.export(path, effects)
 
 
 editor.bind(export, 37, 26)
@@ -327,6 +328,26 @@ def fun():
         elif effects.applied_effects[-1].vt[n] == 'str':
             effects.applied_effects[-1].data[val] = simpledialog.askstring(
             "Add image effect", val, initialvalue=1)
+        elif effects.applied_effects[-1].vt[n] == 'file':
+            effects.applied_effects[-1].data[val] = filedialog.Open(editor.tk).show()
+        elif effects.applied_effects[-1].vt[n] == 'hue':
+            if RGBHSV[3] is not None:
+                effects.applied_effects[-1].data[val] = RGBHSV[3]
+            else:
+                effects.applied_effects[-1].data[val] = simpledialog.askfloat(
+                "Add image effect", val, initialvalue=0)
+        elif effects.applied_effects[-1].vt[n] == 'saturation':
+            if RGBHSV[4] is not None:
+                effects.applied_effects[-1].data[val] = RGBHSV[4]
+            else:
+                effects.applied_effects[-1].data[val] = simpledialog.askfloat(
+                "Add image effect", val, initialvalue=100)
+        elif effects.applied_effects[-1].vt[n] == 'value':
+            if RGBHSV[5] is not None:
+                effects.applied_effects[-1].data[val] = RGBHSV[5]
+            else:
+                effects.applied_effects[-1].data[val] = simpledialog.askfloat(
+                "Add image effect", val, initialvalue=255)
         n += 1
     effects.applied_effects[-1].stream = selected_stream
     refreshPreview()
@@ -374,10 +395,12 @@ def edit_effect(x_click, y_click):
                 effects.applied_effects[n].data[value] = simpledialog.askfloat(
                     "Edit image effect", value,
                     initialvalue=effects.applied_effects[n].data[value])
-            if value_type == 'str':
+            elif value_type == 'str':
                 effects.applied_effects[n].data[value] = simpledialog.askstring(
                     "Edit image effect", value,
                     initialvalue=effects.applied_effects[n].data[value])
+            elif value_type == 'file':
+                effects.applied_effects[n].data[value] = filedialog.Open(editor.tk).show()
         if y < y_click and y+40 > y_click:
             val = simpledialog.askinteger(
                 "effect start", "choose new begin frame",
@@ -401,6 +424,20 @@ editor.create_clicker(30, 100, 170, 600, edit_effect)
 
 # ------end
 
+colourpickerTextId=editor.create_text(700, 50, '')
+def pick_colour(x,y):
+    global RGBHSV
+    if previewImage:
+        img = Image.open('/tmp/vira/prew.gif')
+        xS,yS=img.size
+        xP=int((x-200)/1000*xS)
+        yP=int((y-100)/500*yS)
+        r,g,b = img.convert('RGB').load()[xP,yP]
+        h,s,v = img.convert('HSV').load()[xP,yP]
+        editor.change_object(colourpickerTextId, [700, 50, 'x: %d, y: %d, r: %d, g: %d, b: %d, h: %d, s: %d, v: %d'%(xP,yP,r,g,b,h,s,v), ('Ariel', 5), 'orange'])
+        RGBHSV=(r,g,b,h,s,v)
+editor.create_clicker(200, 100, 1200, 600, pick_colour)
+
 editor.create_down_menu(0, 0, 30, 15, 'File',
                         ['New',   'Open',    'Save',    'Save as',   'Quit'],
                         [newVideo, openVideo, saveVideo, saveAsVideo, exq])
@@ -409,8 +446,6 @@ editor.create_down_menu(30, 0, 60, 15, 'Edit', [
 editor.create_down_menu(60, 0, 110, 15, 'Stream', [
                         'Change start', 'Cut start', 'Cut duration'],
                         [change_start,   change_from, change_len])
-
-
 
 while True:
     if streamerPos < 0:
@@ -500,7 +535,7 @@ while True:
     # preview generator
     if oldPreviewFe != previewFrame or generatePreview:
         generatePreview = False
-        if If.preview(previewFrame, effects.applied_effects):
+        if If.preview(previewFrame, effects):
             img = Image.open('/tmp/vira/prew.gif')
             img = img.resize((1000, 500), Image.ANTIALIAS)
             editor.tk.image = previewImage = ImageTk.PhotoImage(img)
