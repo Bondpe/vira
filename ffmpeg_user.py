@@ -25,8 +25,11 @@ class Empty:
 
     def export(self, file='out.mp4'):
         """exports video"""
-        os.system('ffmpeg -r 25 -i /tmp/vira/%s/frame%%d.png %s' %
-                  (self.name, file))
+        f = open('/tmp/vira/name', 'w')
+        f.write(file)
+        f.close()
+        os.system('ffmpeg -r 25 -i /tmp/vira/%s/frame%%d.png `cat /tmp/vira/name`' %
+                  (self.name))
 
     def __iadd__(self, video):
         """joins secon video to this"""
@@ -97,8 +100,11 @@ the same as empty except loads video"""
     def __init__(self, path, name=None):
         Empty.__init__(self, name)
         self.path = path
-        os.system('ffmpeg -r 25 -i %s /tmp/vira/%s/frame%%d.png' %
-                  (self.path, self.name))
+        f = open('/tmp/vira/name', 'w')
+        f.write(path)
+        f.close()
+        os.system('ffmpeg -r 25 -i `cat /tmp/vira/name` /tmp/vira/%s/frame%%d.png' %
+                  (self.name))
         num = 0
         while True:
             num += 1

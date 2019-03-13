@@ -12,7 +12,10 @@ class Video:
         self.start = start
         self.fromF = fromF
         # extract duration, long command
-        os.system("ffprobe %s -show_format 2>&1 | sed -n 's/duration=//p' > /tmp/vira/data" % path)
+        f = open('/tmp/vira/name', 'w')
+        f.write(path)
+        f.close()
+        os.system("ffprobe `cat /tmp/vira/name` -show_format 2>&1 | sed -n 's/duration=//p' > /tmp/vira/data")
         self.len = int(float(open('/tmp/vira/data').read())*24)
         if durationF > 0:
             self.durationF = durationF
@@ -34,9 +37,12 @@ def preview(l, effects):
             path = videos.index(v)
             frame = l-videos[path].start+videos[path].fromF+1
             string = videos[path].path
+            f = open('/tmp/vira/name', 'w')
+            f.write(string)
+            f.close()
             os.system(
-                'ffmpeg -y -r 25 -ss %f -i %s -vframes 1  /tmp/vira/prew.gif' %
-                (frame/25, string))
+                'ffmpeg -y -r 25 -ss %f -i `cat /tmp/vira/name` -vframes 1  /tmp/vira/prew.gif' %
+                (frame/25))
             for effect in effects.applied_effects:
                 effect.apply('/tmp/vira/prew.gif', stream, l)
             effects.apply_imagemagick()
@@ -80,7 +86,10 @@ def pack(path='packed', effects=[]):
         path += '.packedbyviravideo'
     out = []
     for video in videos:
-        os.system('ffmpeg -y -r 25 -i %s /tmp/vira/out.avi' % (video.path))
+        f = open('/tmp/vira/name', 'w')
+        f.write(video.path)
+        f.close()
+        os.system('ffmpeg -y -r 25 -i `cat /tmp/vira/name` /tmp/vira/out.avi')
         out.append((video.start, video.fromF, video.durationF,
                     open('/tmp/vira/out.avi', 'rb').read()))
     file = open(path, 'wb')

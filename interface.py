@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.0.9'
+version='0.1'
 editor.tk.title('vira v'+version)
 generatePreview = False
 RGBHSV=(None, None, None, None, None, None)
@@ -72,6 +72,140 @@ def saveVideo():
 
 
 editor.bind(saveVideo, 37, 39)
+
+
+def showStreamerHelp():
+    win = Window(500, 450)
+    win.tk.title('help')
+    win.create_button(230, 420, 270, 440, win.tk.destroy, 'OK')
+    win.bind(win.tk.destroy, 36)
+    win.create_text(250, 25, 'VIRA', size=25, fill='#fa0')
+    win.create_text(250, 70, 'simple video editor for raspberrypi', size=20, fill='green')
+    win.create_text(250, 100, 'streamer', size=20, fill='blue')
+    win.create_down_menu(0, 0, 50, 15, 'Stream', [
+                        'Change start', 'Cut start', 'Cut duration'], [None, None, None])
+    win.create_text(250, 250, '''
+For moving in time and cropping videos, there
+is a thing called "streamer", located on the
+bottom of editor. Selected stream is defined
+by blue rectangle around. You can move stream
+with arrow keys, crop with Ctrl or Shift and
+arrows. To add new video file, just press
+Shift+A or use Edit>add. to delete, use red
+cross button under streamer, to move video
+between streams, click on blue down-arrows
+button. Also, select another stream by
+clicking on its rectangle. If you're working
+with bigger number of steams, just click on
+'scale' button and enter percents. To do cutting
+and moving more precisely, use Stream menu.
+Also, scroll down the streamer with green arrows
+under streams. Orange circular arrow there updates
+preview''', size=10)
+    while True:
+        try:
+            win.update()
+        except:
+                break
+
+
+def showSaveHelp():
+    win = Window(500, 700)
+    win.tk.title('help')
+    win.create_button(230, 670, 270, 690, win.tk.destroy, 'OK')
+    win.bind(win.tk.destroy, 36)
+    win.create_text(250, 25, 'VIRA', size=25, fill='#fa0')
+    win.create_text(250, 70, 'simple video editor for raspberrypi', size=20, fill='green')
+    win.create_text(250, 100, 'saving, packing,', size=20, fill='blue')
+    win.create_text(250, 120, 'opening and exporting', size=20, fill='blue')
+    win.create_down_menu(0, 0, 30, 15, 'File',
+                         ['New', 'Open', 'Save', 'Save as', 'Help', 'Quit'], [None, None, None, None, None, None])
+    win.create_down_menu(30, 0, 60, 15, 'Edit', ['Add', 'Export', 'Pack'], [None, None, None])
+    win.create_text(250, 450, '''using File menu, you can save your project,
+but using edit you may pack it.
+the difference:
+    saved file contains LINKS to video files,
+    so after files are deleted editor will show
+    error and stop loading file
+
+    packed file contains BINARY DATA of videos
+    it means that this file is independent
+
+you open these files the same way, with file menu
+
+to export something onto video file so any video
+editor can play them,
+select Edit>Export, then select folder and file.
+EXTENSIONS ARE IMPORTANT. Using them ffmpeg defines
+container type and codec. If not selected with
+extension, ffmpeg generates no output file. After
+that editor will start exporting. it requires A
+LOT of cpu power. There is even a risk of
+overheating while analysing really big videos.
+Wait until editor unfreezes, then find your file!
+UNUSEFUL CLONES OF FILE and EDIT MENUS ON TOP OF WINDOW''', size=10)
+    while True:
+        try:
+            win.update()
+        except:
+                break
+
+
+def showEffectsHelp():
+    win = Window(500, 250)
+    win.tk.title('help')
+    win.create_button(230, 220, 270, 240, win.tk.destroy, 'OK')
+    win.bind(win.tk.destroy, 36)
+    win.create_text(250, 25, 'VIRA', size=25, fill='#fa0')
+    win.create_text(250, 70, 'simple video editor for raspberrypi', size=20, fill='green')
+    win.create_text(250, 100, 'creating visual effects', size=20, fill='blue')
+    win.create_text(250, 150, '''
+To add effect, press on "add effect" on the left and enter input values.
+Effect is added to selected stream only. To see streams effects, select
+it. To change effects input value, click on it. To cut effect, click on
+effects name. to delete it, click on red cross. Blue arrows move effect
+between streams. Too many effects are forbidden, autoremoving last one.
+Also, they're showing in streamer as thin lines, only for current stream.''', size=10)
+    while True:
+        try:
+            win.update()
+        except:
+                break
+
+
+def showHelp():
+    win = Window(500, 700)
+    win.tk.title('help')
+    win.create_button(230, 670, 270, 690, win.tk.destroy, 'OK')
+    win.bind(win.tk.destroy, 36)
+    win.create_text(250, 25, 'VIRA', size=25, fill='#fa0')
+    win.create_text(250, 60, 'simple video editor for raspberrypi', size=10, fill='green')
+    win.create_text(250, 80, 'hopefully, it works on any linux', size=10)
+    win.create_text(250, 95, 'install requirements:', size=15, fill='blue')
+    win.create_rectangle(0, 105, 500, 125, fill='#aaa')
+    win.create_text(150, 115, '# apt install python3-pil imagemagick ffmpeg', size=10)
+    win.create_text(150, 135, 'more help here:', size=10)
+    def showStreamerHelpD():
+        win.tk.destroy()
+        showStreamerHelp()
+    win.create_button(0, 150, 500, 175, showStreamerHelpD, 'basic video cutting')
+    def showSaveHelpD():
+        win.tk.destroy()
+        showSaveHelp()
+    win.create_button(0, 200, 500, 225, showSaveHelpD, 'saving, exporting and packing')
+    def showEffectsHelpD():
+        win.tk.destroy()
+        showEffectsHelp()
+    win.create_button(0, 250, 500, 275, showEffectsHelpD, 'effects')
+    while True:
+        try:
+            win.update()
+        except:
+                break
+
+
+editor.bind(showHelp, 37, 43)
+editor.bind(showHelp, 67)
 
 
 def exq():
@@ -439,8 +573,8 @@ def pick_colour(x,y):
 editor.create_clicker(200, 100, 1200, 600, pick_colour)
 
 editor.create_down_menu(0, 0, 30, 15, 'File',
-                        ['New',   'Open',    'Save',    'Save as',   'Quit'],
-                        [newVideo, openVideo, saveVideo, saveAsVideo, exq])
+                        ['New',   'Open',    'Save',    'Save as',   'Help',   'Quit'],
+                        [newVideo, openVideo, saveVideo, saveAsVideo, showHelp, exq])
 editor.create_down_menu(30, 0, 60, 15, 'Edit', [
                         'Add', 'Export', 'Pack'], [Add, export, pack])
 editor.create_down_menu(60, 0, 110, 15, 'Stream', [

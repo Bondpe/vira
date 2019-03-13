@@ -1,4 +1,5 @@
 from tkinter import Canvas, Tk
+import os
 
 
 class Window:
@@ -45,9 +46,12 @@ class Window:
                         or evt.y < y1 or evt.y > y2:
                     continue
                 try:
-                    function(evt.x, evt.y)
-                except TypeError:
-                    function()
+                    try:
+                        function(evt.x, evt.y)
+                    except TypeError:
+                        function()
+                except BaseException as error:
+                    os.system('zenity --error --text="%s"'%str(error))
 
             if display and shape == 'button':
                 x1, y1, x2, y2, function, text = data
@@ -56,7 +60,10 @@ class Window:
                         and self.mouse[1] < y2 \
                         and self.mouse[1] > y1:
                     # mouse over functioning button
-                    function()
+                    try:
+                        function()
+                    except BaseException as error:
+                        os.system('zenity --error --text="%s"'%str(error))
 
     #  ~~  ~~    ~~  ~~  ~~  ~~  ~~  ~~  different shape objects
     def create_rectangle(self, x1, y1, x2, y2, fill='#000'):
@@ -140,7 +147,10 @@ class Window:
                 if not key in bind:
                     every = False
             if every:
-                fun()
+                try:
+                    fun()
+                except BaseException as error:
+                    os.system('zenity --error --text="%s"'%str(error))
         # drawing
         for shape, data, display in self.shapes:
             if display:
