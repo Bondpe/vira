@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.1'
+version='0.1.stable'
 editor.tk.title('vira v'+version)
 generatePreview = False
 RGBHSV=(None, None, None, None, None, None)
@@ -43,9 +43,12 @@ def openVideo():
     path = filedialog.Open(editor.tk).show()
     if path == () or path == '':
         return
-    effects.applied_effects = If.openF(path)
-    projectPath = path
-    editor.tk.title('vira v'+version+' - '+path)
+    try:
+        effects.applied_effects = If.openF(path)
+        projectPath = path
+        editor.tk.title('vira v'+version+' - '+path)
+    except:
+        If.videos.append(If.Video(path))
     refreshPreview()
 
 
@@ -76,7 +79,7 @@ editor.bind(saveVideo, 37, 39)
 
 def showStreamerHelp():
     win = Window(500, 450)
-    win.tk.title('help')
+    win.tk.title('help - streamer')
     win.create_button(230, 420, 270, 440, win.tk.destroy, 'OK')
     win.bind(win.tk.destroy, 36)
     win.create_text(250, 25, 'VIRA', size=25, fill='#fa0')
@@ -93,7 +96,7 @@ with arrow keys, crop with Ctrl or Shift and
 arrows. To add new video file, just press
 Shift+A or use Edit>add. to delete, use red
 cross button under streamer, to move video
-between streams, click on blue down-arrows
+between streams, click on blue 3 down-arrows
 button. Also, select another stream by
 clicking on its rectangle. If you're working
 with bigger number of steams, just click on
@@ -101,7 +104,8 @@ with bigger number of steams, just click on
 and moving more precisely, use Stream menu.
 Also, scroll down the streamer with green arrows
 under streams. Orange circular arrow there updates
-preview''', size=10)
+preview. Green right and left arrows and "frame"
+button - horizontal streamer navigation''', size=10)
     while True:
         try:
             win.update()
@@ -111,7 +115,7 @@ preview''', size=10)
 
 def showSaveHelp():
     win = Window(500, 700)
-    win.tk.title('help')
+    win.tk.title('help - saving')
     win.create_button(230, 670, 270, 690, win.tk.destroy, 'OK')
     win.bind(win.tk.destroy, 36)
     win.create_text(250, 25, 'VIRA', size=25, fill='#fa0')
@@ -138,12 +142,12 @@ editor can play them,
 select Edit>Export, then select folder and file.
 EXTENSIONS ARE IMPORTANT. Using them ffmpeg defines
 container type and codec. If not selected with
-extension, ffmpeg generates no output file. After
-that editor will start exporting. it requires A
-LOT of cpu power. There is even a risk of
+extension, ffmpeg generates no output file.
+After that editor will start exporting. it requires
+A LOT of cpu power. There is even a risk of
 overheating while analysing really big videos.
 Wait until editor unfreezes, then find your file!
-UNUSEFUL CLONES OF FILE and EDIT MENUS ON TOP OF WINDOW''', size=10)
+UNUSEFUL CLONES OF FILE and EDIT MENUS ARE ON TOP OF THE WINDOW''', size=10)
     while True:
         try:
             win.update()
@@ -153,19 +157,19 @@ UNUSEFUL CLONES OF FILE and EDIT MENUS ON TOP OF WINDOW''', size=10)
 
 def showEffectsHelp():
     win = Window(500, 250)
-    win.tk.title('help')
+    win.tk.title('help - effects')
     win.create_button(230, 220, 270, 240, win.tk.destroy, 'OK')
     win.bind(win.tk.destroy, 36)
     win.create_text(250, 25, 'VIRA', size=25, fill='#fa0')
     win.create_text(250, 70, 'simple video editor for raspberrypi', size=20, fill='green')
     win.create_text(250, 100, 'creating visual effects', size=20, fill='blue')
     win.create_text(250, 150, '''
-To add effect, press on "add effect" on the left and enter input values.
-Effect is added to selected stream only. To see streams effects, select
-it. To change effects input value, click on it. To cut effect, click on
+To add effect, press on "add effect" on the right and enter input values. Effect
+is added to selected stream only. To see streams effects, select it. To change
+effects input value, click on that value shown. To cut effect, click on
 effects name. to delete it, click on red cross. Blue arrows move effect
 between streams. Too many effects are forbidden, autoremoving last one.
-Also, they're showing in streamer as thin lines, only for current stream.''', size=10)
+Also, they're showing in streamer as thin lines, but only for current stream.''', size=10)
     while True:
         try:
             win.update()
@@ -183,7 +187,7 @@ def showHelp():
     win.create_text(250, 80, 'hopefully, it works on any linux', size=10)
     win.create_text(250, 95, 'install requirements:', size=15, fill='blue')
     win.create_rectangle(0, 105, 500, 125, fill='#aaa')
-    win.create_text(150, 115, '# apt install python3-pil imagemagick ffmpeg', size=10)
+    win.create_text(200, 115, '# apt install python3-pil imagemagick ffmpeg python3-tk zenity', size=10)
     win.create_text(150, 135, 'more help here:', size=10)
     def showStreamerHelpD():
         win.tk.destroy()
@@ -362,11 +366,14 @@ previewImage = None
 previewFrame = 1
 oldPreviewFe = 1
 streamerScale = 1
+streamerFrame = 0
 
 
 def newPreview():
-    global previewFrame, streamerScale
-    previewFrame = (editor.mouse[0]-200)/streamerScale
+    global previewFrame
+    previewFrame = (editor.mouse[0]-200-streamerFrame*streamerScale)/streamerScale
+    if previewFrame < 0:
+        previewFrame = 0
 
 
 editor.create_clicker(200, 600, 1200, 780, newPreview)
@@ -381,6 +388,26 @@ def newScale():
 
 editor.create_clicker(160, 780, 200, 800, newScale)
 # pos
+
+
+def newFramePos():
+    global streamerFrame
+    streamerFrame = simpledialog.askinteger("Streamer", "Skip to frame")
+
+
+def streamerButtonRight():
+    global streamerFrame
+    streamerFrame -= 1
+
+
+def streamerButtonLeft():
+    global streamerFrame
+    streamerFrame += 1
+
+
+editor.create_clicker(440, 780, 480, 800, newFramePos)
+editor.create_clicker(480, 780, 520, 800, streamerButtonLeft)
+editor.create_clicker(520, 780, 560, 800, streamerButtonRight)
 
 
 def newPos():
@@ -599,24 +626,24 @@ while True:
         if n >= 0:
             editor.canvas.create_rectangle(
                 200, 600+n, 1200, 620+n, fill='#ddd')
-            e1 = (video.start - video.fromF) * streamerScale
+            e1 = (video.start - video.fromF) * streamerScale + streamerFrame*streamerScale
             if e1 < 0:
                 e1 = 0
             if e1 > 1000:
                 e1 = 1000
-            e2 = (video.start - video.fromF + video.len) * streamerScale
+            e2 = (video.start - video.fromF + video.len) * streamerScale + streamerFrame*streamerScale
             if e2 < 0:
                 e2 = 0
             if e2 > 1000:
                 e2 = 1000
             editor.canvas.create_rectangle(200 + e1, 600+n,
                                            200 + e2, 620+n, fill='#ffa')
-            e1 = video.start * streamerScale
+            e1 = video.start * streamerScale + streamerFrame*streamerScale
             if e1 < 0:
                 e1 = 0
             if e1 > 1000:
                 e1 = 1000
-            e2 = (video.start - video.fromF + video.durationF) * streamerScale
+            e2 = (video.start - video.fromF + video.durationF) * streamerScale + streamerFrame*streamerScale
             if e2 < 0:
                 e2 = 0
             if e2 > 1000:
@@ -665,6 +692,13 @@ while True:
     editor.canvas.create_oval(413, 783, 427, 797, fill='orange')
     editor.canvas.create_oval(415, 785, 425, 795, fill='#aaa')
     editor.canvas.create_polygon(422, 790, 430, 790, 426, 793, fill='orange')  # refresh
+    editor.canvas.create_rectangle(440, 780, 480, 800, fill='#aaa')
+    editor.canvas.create_text(460, 790, text='frame:%d' %
+                              (streamerFrame+1), font=('Ariel', 5))
+    editor.canvas.create_rectangle(480, 780, 520, 800, fill='#aaa')
+    editor.canvas.create_polygon(490, 790, 510, 795, 510, 785, fill='green')
+    editor.canvas.create_rectangle(520, 780, 560, 800, fill='#aaa')
+    editor.canvas.create_polygon(550, 790, 530, 795, 530, 785, fill='green')
 
     # preview generator
     if oldPreviewFe != previewFrame or generatePreview:
@@ -678,19 +712,6 @@ while True:
         else:
             previewImage = None  # if none of videos there
 
-    # display preview
-    if previewImage:
-        editor.canvas.create_image((200, 100), anchor='nw', image=previewImage)
-    else:
-        editor.canvas.create_rectangle(200, 100, 1200, 600, fill='#aaa')
-
-    # preview position
-    editor.canvas.create_line(previewFrame*streamerScale+200, 600,
-                              previewFrame*streamerScale+200, 780,
-                              fill='red')
-    editor.canvas.create_text(previewFrame*streamerScale+200, 590,
-                              text=str(int(previewFrame)), fill='red')
-
     # effects
     effectN = 0
     visible_effects = []
@@ -700,14 +721,20 @@ while True:
         effect_in_list += 1
         if effect.stream == selected_stream:
             effect_in_visibles += 1
-            max_dur_effect = 1000/streamerScale-effect.start
+            max_dur_effect = (1000-streamerFrame*streamerScale)/streamerScale-effect.start
             dur_effect = effect.duration if effect.duration != -1 else max_dur_effect
             if dur_effect > max_dur_effect:
                 dur_effect = max_dur_effect
-            editor.canvas.create_rectangle(effect.start*streamerScale+200,
+            if effect.start*streamerScale+streamerFrame*streamerScale > 0:
+                startOfThisEffect = effect.start*streamerScale+streamerFrame*streamerScale
+            else:
+                startOfThisEffect = 0
+            if startOfThisEffect > 1000:
+                startOfThisEffect = 1000
+            editor.canvas.create_rectangle(startOfThisEffect+200,
                                            600+effect_in_visibles*3,
                                            (dur_effect+effect.start)*
-                                           streamerScale+200,
+                                           streamerScale+streamerFrame*streamerScale+200,
                                            600+effect_in_visibles*3+1,
                                            fill='orange', outline='orange')
             visible_effects.append((120+effectN, effect_in_list))
@@ -755,5 +782,23 @@ while True:
                                               font=('Ariel', 100), fill='red')
                     refreshPreview()
             effectN += effect_strings
+
+    # display preview
+    if previewImage:
+        editor.canvas.create_image((200, 100), anchor='nw', image=previewImage)
+    else:
+        editor.canvas.create_rectangle(200, 100, 1200, 600, fill='#aaa')
+
+    # preview position line
+    if previewFrame*streamerScale+streamerFrame*streamerScale > 0 and previewFrame*streamerScale+streamerFrame*streamerScale < 1000:
+        editor.canvas.create_line(previewFrame*streamerScale+streamerFrame*streamerScale+200, 600,
+                                  previewFrame*streamerScale+streamerFrame*streamerScale+200, 780,
+                                  fill='red')
+        editor.canvas.create_text(previewFrame*streamerScale+streamerFrame*streamerScale+200, 590,
+                                  text=str(int(previewFrame)), fill='red')
+    if streamerFrame*streamerScale > 0 and streamerScale+streamerFrame*streamerScale < 1000:
+        editor.canvas.create_line(streamerFrame*streamerScale+200, 600,
+                                  streamerFrame*streamerScale+200, 780,
+                                  fill='green')
 
     editor.update()  # update window data (menus etc.)

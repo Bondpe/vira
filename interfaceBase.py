@@ -44,7 +44,10 @@ def preview(l, effects):
                 'ffmpeg -y -r 25 -ss %f -i `cat /tmp/vira/name` -vframes 1  /tmp/vira/prew.gif' %
                 (frame/25))
             for effect in effects.applied_effects:
-                effect.apply('/tmp/vira/prew.gif', stream, l)
+                try:
+                    effect.apply('/tmp/vira/prew.gif', stream, l)
+                except:
+                    os.system('zenity --error --text="applying effect error"')
             effects.apply_imagemagick()
             return True
     return False
@@ -72,8 +75,11 @@ def export(pathOut, effects):
         current_frame = out.len
         out.len += 1
         for effect in effects.applied_effects:
-            effect.apply('/tmp/vira/%s/frame%d.png'%(out.name, current_frame),
-                         stream, current_frame)
+            try:
+                effect.apply('/tmp/vira/%s/frame%d.png'%(out.name, current_frame),
+                             stream, current_frame)
+            except:
+                os.system('zenity --error --text="applying effect error!"')
         effects.apply_imagemagick_slow()
     out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4')
 
