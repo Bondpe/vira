@@ -1,13 +1,16 @@
 #!/usr/env/python3
-import ffmpeg_user
-import os
-import pickle
+import ffmpeg_user, os, pickle, copy
+from PIL import Image
+import numpy as np
 os.system('mkdir /tmp/vira')
+clip_size_X, clip_size_Y = 1920, 1080
 
 
 # --------------------Video in editor has extra data and is different
 class Video:
-    def __init__(self, path, start=0, fromF=0, durationF=0):
+    def __init__(self, path, start=0, fromF=0, durationF=0, transparent=0):
+        self.transparency = transparent
+        self.mask = None
         self.path = path
         self.start = start
         self.fromF = fromF
@@ -30,9 +33,14 @@ SAVABLE = True
 
 def preview(l, effects):
     """generate preview to /tmp/vira/prew.gif"""
-    stream = 0
-    for v in videos:
-        stream += 1
+    succesful = False
+    I = np.zeros((clip_size_X, clip_size_Y, 3))
+    stream = len(videos)+1
+    print(stream)
+    videosFlipped = copy.copy(videos)
+    videosFlipped.reverse()
+    for v in videosFlipped:
+        stream -= 1
         if v.start <= l and v.start+v.durationF >= l:
             path = videos.index(v)
             frame = l-videos[path].start+videos[path].fromF+1
@@ -41,46 +49,102 @@ def preview(l, effects):
             f.write(string)
             f.close()
             os.system(
-                'ffmpeg -y -r 25 -ss %f -i `cat /tmp/vira/name` -vframes 1  /tmp/vira/prew.gif' %
+                'ffmpeg -y -r 25 -ss %f -i `cat /tmp/vira/name` -vframes 1  /tmp/vira/prewiev.png' %
                 (frame/25))
             for effect in effects.applied_effects:
                 try:
-                    effect.apply('/tmp/vira/prew.gif', stream, l)
+                    print(stream)
+                    effect.apply('/tmp/vira/prewiev.png', stream, l)
                 except:
                     os.system('zenity --error --text="applying effect error"')
             effects.apply_imagemagick()
-            return True
-    return False
+            print(np.asarray(Image.open('/tmp/vira/prewiev.png').convert('RGB')).shape)
+            I2 = np.resize(np.asarray(Image.open('/tmp/vira/prewiev.png').convert('RGB')), (clip_size_X, clip_size_Y, 3))
+            if v.mask is None:
+                I = I*v.transparency+I2*(1-v.transparency)
+            else:
+                mask = np.resize(np.asarray(Image.open(v.mask).convert('RGB')), (clip_size_X, clip_size_Y, 3))
+                I = I*mask/255+I2*(1-mask/255)
+            succesful = True
+    Image.fromarray(np.uint8(I)).save('/tmp/vira/prew.gif')
+    return succesful
 
 
-def export(pathOut, effects):
+##def export(pathOut, effects):
+##    """export video"""
+##    pathlist = []
+##    for l in range(Len):
+##        for v in videos:
+##            if v.start <= l and v.start+v.durationF >= l:
+##                pathlist.append((l, videos.index(v)))
+##                break
+##    vids = []
+##    for v in videos:
+##        vids.append(ffmpeg_user.Video(v.path))
+##    out = ffmpeg_user.Empty()
+##    for f in range(len(pathlist)):
+##        os.system('cp /tmp/vira/%s/frame%d.png /tmp/vira/%s/frame%d.png' %
+##                  (vids[pathlist[f][1]].name,
+##                   f - videos[pathlist[f][1]].start +
+##                   videos[pathlist[f][1]].fromF+1,
+##                   out.name, out.len))
+##        stream = int(vids[pathlist[f][1]].name)-1
+##        current_frame = out.len
+##        out.len += 1
+##        for effect in effects.applied_effects:
+##            try:
+##                effect.apply('/tmp/vira/%s/frame%d.png'%(out.name, current_frame),
+##                             stream, current_frame)
+##            except:
+##                os.system('zenity --error --text="applying effect error!"')
+##        effects.apply_imagemagick_slow()
+##    out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4')
+def export(pathOut, effects, turbo=True):
     """export video"""
-    pathlist = []
+    out = ffmpeg_user.Empty()
+    videosFlipped = copy.copy(videos)
+    videosFlipped.reverse()
+    vids = {}
+    for v in videosFlipped:
+        vids[v] = ffmpeg_user.Video(v.path)
+    pathlist = 0
     for l in range(Len):
         for v in videos:
             if v.start <= l and v.start+v.durationF >= l:
-                pathlist.append((l, videos.index(v)))
+                pathlist += 1
                 break
-    vids = []
-    for v in videos:
-        vids.append(ffmpeg_user.Video(v.path))
-    out = ffmpeg_user.Empty()
-    for f in range(len(pathlist)):
-        os.system('cp /tmp/vira/%s/frame%d.png /tmp/vira/%s/frame%d.png' %
-                  (vids[pathlist[f][1]].name,
-                   f - videos[pathlist[f][1]].start +
-                   videos[pathlist[f][1]].fromF+1,
-                   out.name, out.len))
-        stream = int(vids[pathlist[f][1]].name)-1
-        current_frame = out.len
-        out.len += 1
-        for effect in effects.applied_effects:
-            try:
-                effect.apply('/tmp/vira/%s/frame%d.png'%(out.name, current_frame),
-                             stream, current_frame)
-            except:
-                os.system('zenity --error --text="applying effect error!"')
+    for frame in range(pathlist):
+        I = np.zeros((clip_size_X, clip_size_Y, 3))
+        stream = len(videos)+1
+        for v in videosFlipped:
+            stream -= 1
+            if v.start <= frame and v.start+v.durationF >= frame:
+                frameInside = frame-v.start+1
+                for effect in effects.applied_effects:
+                    try:
+                        effect.apply('/tmp/vira/%s/frame%d.png'%(vids[v].name,frameInside),
+                                     stream, frame)
+                    except:
+                        os.system('zenity --error --text="applying effect error!"')
+    if turbo:
         effects.apply_imagemagick_slow()
+    else:
+        effects.apply_imagemagick()
+    for frame in range(pathlist):
+        I = np.zeros((clip_size_X, clip_size_Y, 3))
+        stream = len(videos)+1
+        for v in videosFlipped:
+            stream -= 1
+            if v.start <= frame and v.start+v.durationF >= frame:
+                frameInside = frame-v.start+1
+                I2 = np.resize(np.asarray(Image.open('/tmp/vira/%s/frame%d.png'%(vids[v].name,frameInside)).convert('RGB')), (clip_size_X, clip_size_Y, 3))
+                if v.mask is None:
+                    I = I*v.transparency+I2*(1-v.transparency)
+                else:
+                    mask = np.resize(np.asarray(Image.open(v.mask).convert('RGB')), (clip_size_X, clip_size_Y, 3))
+                    I = I*mask/255+I2*(1-mask/255)
+        Image.fromarray(np.uint8(I)).save('/tmp/vira/%s/frame%d.png'%(out.name, out.len))
+        out.len += 1
     out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4')
 
 
@@ -97,7 +161,7 @@ def pack(path='packed', effects=[]):
         f.close()
         os.system('ffmpeg -y -r 25 -i `cat /tmp/vira/name` /tmp/vira/out.avi')
         out.append((video.start, video.fromF, video.durationF,
-                    open('/tmp/vira/out.avi', 'rb').read()))
+                    open('/tmp/vira/out.avi', 'rb').read(), video.transparency, open(video.mask, 'rb').read() if video.mask is not None else None))
     file = open(path, 'wb')
     pickle.dump([out, effects], file)
     file.close()
@@ -114,39 +178,10 @@ def save(path='saved', effects=[]):
         path += '.savedbyviravideo'
     out = []
     for video in videos:
-        out.append((video.start, video.fromF, video.durationF, video.path))
+        out.append((video.start, video.fromF, video.durationF, video.path, video.transparency, video.mask))
     file = open(path, 'wb')
     pickle.dump([out, effects], file)
     file.close()
-
-
-def unpack(path):
-    """open data including videos used"""
-    global videos, SAVABLE
-    videos = []
-    unpacked, effects = pickle.load(open(path, 'rb'))
-    os.system('mkdir /tmp/vira/unpacked')
-    ID = 0
-    for vid in unpacked:
-        file = open('/tmp/vira/unpacked/%d.avi' % ID, 'wb')
-        file.write(vid[3])
-        file.close()
-        videos.append(Video('/tmp/vira/unpacked/%d.avi' % ID,
-                            vid[0], vid[1], vid[2]))
-        ID += 1
-    SAVABLE = False
-    return effects
-
-
-def openV(path):
-    """open data excluding videos used"""
-    global videos, SAVABLE
-    videos = []
-    unpacked, effects = pickle.load(open(path, 'rb'))
-    for vid in unpacked:
-        videos.append(Video(vid[3], vid[0], vid[1], vid[2]))
-    SAVABLE = True
-    return effects
 
 
 def openF(path):
@@ -164,11 +199,21 @@ def openF(path):
                 file.close()
                 videos.append(Video('/tmp/vira/unpacked/%d.avi' % ID,
                                     vid[0], vid[1], vid[2]))
+                if len(vid) > 4:
+                    videos[-1].transparency = vid[4]
+                    if vid[5] is not None:
+                        file = open('/tmp/vira/unpacked/mask%d.png' % ID, 'wb')
+                        file.write(vid[5])
+                        file.close()
+                        videos[-1].mask = '/tmp/vira/unpacked/mask%d.png' % ID
                 ID += 1
             SAVABLE = False
         else:
             for vid in unpacked:
                 videos.append(Video(vid[3], vid[0], vid[1], vid[2]))
+                if len(vid) > 4:
+                    videos[-1].transparency = vid[4]
+                    videos[-1].mask = vid[5]
             SAVABLE = True
     return effects
 

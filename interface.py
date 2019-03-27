@@ -1,8 +1,8 @@
 #!/usr/env/python3
-import sys, effects
+import sys, effects, settings, random, loadEffect
 import interfaceBase as If
 from tkinter import filedialog, simpledialog
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageShow, ImageDraw, ImageFilter
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
@@ -10,8 +10,11 @@ version='0.1.stable'
 editor.tk.title('vira v'+version)
 generatePreview = False
 RGBHSV=(None, None, None, None, None, None)
+XY = 0,0
+mask_points = []
+mask_last_x,mask_last_y = 0,0
+creating_mask = False
 # ---------------------------------Initialise functions
-import loadEffect
 loadEffect.main(effects, editor, filedialog)
 
 def refreshPreview():
@@ -25,6 +28,9 @@ editor.create_clicker(400, 780, 440, 800, refreshPreview)
 # ============================ File
 projectPath = None
 
+show_settings = lambda: settings.show_window(Window)
+
+editor.bind(show_settings, 37, 30)
 
 def newVideo():
     global projectPath
@@ -237,7 +243,19 @@ editor.bind(Add, 50, 38)
 
 def export():
     path = filedialog.SaveAs(editor.tk).show()
-    If.export(path, effects)
+    d = simpledialog.SimpleDialog(editor.tk,
+                 text="Warning: turbo mode is much faster, "
+                      "but power-consuming, memory-consuming, "
+                      "you can easily loose data, and there is a "
+                      "risk of overheating while using it",
+                 buttons=["Turbo mode", "Normal mode", "Cancel"],
+                 default=1,
+                 cancel=2,
+                 title="Export mode")
+    mode = d.go()
+    if mode == 2:
+        return
+    If.export(path, effects, (mode == 0))
 
 
 editor.bind(export, 37, 26)
@@ -359,6 +377,55 @@ def change_len():
         If.videos[stream].path, initialvalue=0)-1
     If.videos[stream].durationF = start+If.videos[stream].start
     refreshPreview()
+
+
+def change_transparency():
+    global selected_stream
+    stream = selected_stream+streamerPos-1
+    if len(If.videos) <= stream:
+        return
+    percent = simpledialog.askinteger(
+        "Change stream data (transparency)", "streams transparency\n(%s):" %
+        If.videos[stream].path, initialvalue=0)-1
+    if percent < 0 or percent > 100:
+        return
+    If.videos[stream].transparency = percent/100
+    If.videos[stream].mask = None
+    refreshPreview()
+
+
+def create_mask():
+    global selected_stream, mask_points, creating_mask, mask_last_x, mask_last_y
+    mask_points = []
+    mask_last_x,mask_last_y = XY[0], XY[1]
+    creating_mask = True
+
+
+def update_mask():
+    global selected_stream, mask_points, creating_mask, mask_last_x, mask_last_y
+    if not creating_mask:
+        return
+    if mask_last_x == XY[0] and mask_last_y == XY[1]:
+        return
+    if len(mask_points) >= 3 and round(XY[0]/10) == round(mask_points[0][0]/10) and round(XY[1]/10) == round(mask_points[0][1]/10):
+        print('saved mask')
+        im = Image.new("RGB", (If.clip_size_Y, If.clip_size_X))
+        draw = ImageDraw.Draw(im)
+        draw.polygon(mask_points,fill=(255,255,255))
+        stream = selected_stream+streamerPos-1
+        im = im.filter(ImageFilter.GaussianBlur(radius=simpledialog.askinteger(
+                "Border of that mask", "mask border sharpness\n(%s):" %
+                If.videos[stream].path, initialvalue=0)))
+        id = random.randint(0, 100000)
+        im.save('mask%d.png'%id)
+        If.videos[stream].mask = 'mask%d.png'%id
+        creating_mask = False
+        mask_points = []
+        refreshPreview()
+    else:
+        print('added point')
+        mask_points.append(XY)
+        mask_last_x,mask_last_y = XY[0], XY[1]
 
 
 # ~~preview
@@ -587,7 +654,7 @@ editor.create_clicker(30, 100, 170, 600, edit_effect)
 
 colourpickerTextId=editor.create_text(700, 50, '')
 def pick_colour(x,y):
-    global RGBHSV
+    global RGBHSV, XY
     if previewImage:
         img = Image.open('/tmp/vira/prew.gif')
         xS,yS=img.size
@@ -597,18 +664,21 @@ def pick_colour(x,y):
         h,s,v = img.convert('HSV').load()[xP,yP]
         editor.change_object(colourpickerTextId, [700, 50, 'x: %d, y: %d, r: %d, g: %d, b: %d, h: %d, s: %d, v: %d'%(xP,yP,r,g,b,h,s,v), ('Ariel', 5), 'orange'])
         RGBHSV=(r,g,b,h,s,v)
+        XY = xP, yP
 editor.create_clicker(200, 100, 1200, 600, pick_colour)
 
 editor.create_down_menu(0, 0, 30, 15, 'File',
-                        ['New',   'Open',    'Save',    'Save as',   'Help',   'Quit'],
-                        [newVideo, openVideo, saveVideo, saveAsVideo, showHelp, exq])
+                        ['New',   'Open',    'Save',    'Save as',    'Preferences', 'Help',   'Quit'],
+                        [newVideo, openVideo, saveVideo, saveAsVideo, show_settings, showHelp, exq])
 editor.create_down_menu(30, 0, 60, 15, 'Edit', [
                         'Add', 'Export', 'Pack'], [Add, export, pack])
 editor.create_down_menu(60, 0, 110, 15, 'Stream', [
-                        'Change start', 'Cut start', 'Cut duration'],
-                        [change_start,   change_from, change_len])
+                        'Change start', 'Cut start', 'Cut duration', 'Enter transparency', 'Draw mask'],
+                        [change_start,   change_from, change_len, change_transparency, create_mask])
 
 while True:
+    update_mask()
+    If.clip_size_X, If.clip_size_Y = settings.CLIP_X, settings.CLIP_Y
     if streamerPos < 0:
         streamerPos = 0
     # streamer area fill
@@ -788,6 +858,13 @@ while True:
         editor.canvas.create_image((200, 100), anchor='nw', image=previewImage)
     else:
         editor.canvas.create_rectangle(200, 100, 1200, 600, fill='#aaa')
+    for xm,ym in mask_points:
+        x = int(xm/If.clip_size_Y*1000+200)
+        y = int(ym/If.clip_size_X*500+100)
+        if round((editor.mouse[0]-200)*If.clip_size_Y/10000) == round(xm/10) and round((editor.mouse[1]-100)*If.clip_size_X/5000) == round(ym/10):
+            editor.canvas.create_oval(x-5,y-5,x+5,y+5, outline='green', fill='blue')
+        else:
+            editor.canvas.create_oval(x-5,y-5,x+5,y+5, outline='blue')
 
     # preview position line
     if previewFrame*streamerScale+streamerFrame*streamerScale > 0 and previewFrame*streamerScale+streamerFrame*streamerScale < 1000:

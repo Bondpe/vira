@@ -162,6 +162,7 @@ def apply_imagemagick():
     imagemagicks = {}
 def apply_imagemagick_slow():
     global imagemagicks
+    l = []
     for x in imagemagicks:
         string = 'convert %s '%x
         for arg in imagemagicks[x]:
@@ -169,8 +170,9 @@ def apply_imagemagick_slow():
             string += ' '
         string += x
         string += ' &'
-        os.system(string)
+        l.append(string)
     imagemagicks = {}
+    os.system('\n'.join(string)+'\nwait')
 for names in imagemagick_effects:
     name, arg = names.split(' ')
     add_imagemagick(name, arg)
