@@ -10,6 +10,7 @@ python3 interface.py
 run program<br />
 white rectangle on bottom is called "streamer", basically it's list of streams where top one is playing over bottom<br />
 use Shift+A or Edit>Add to create new stream from video file<br />
+if your preview looks wierd, check resolution in File > Preferences, it has to match image size<br />
 you can add a lot of streams, resort them with blue 3-arrows key on bottom, delete with red X, move with arrow keys, cut with Shift+arrow keys and Ctrl+arrow keys, move&cut with Stream menu<br />
 Select stream by clicking, add effects with "add effect" menu, they should appear on pink field on the left<br />
 to delete effect use red X, to move it onto another stream, use blue arrow buttons<br />
@@ -25,6 +26,7 @@ Packing copies input files into packed file, you literally can't save unpacked f
 Also packing is slower, but much more stable<br />
 opening packed&saved files works the same way: using File>Open<br />
 to export your work, to save it as video file, use Edit>Export<br />
+add masks, change video transparency (mask is a hole in a video)<br />
 # create own effect
 file has to look like this for now:
 ```
