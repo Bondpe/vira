@@ -172,7 +172,7 @@ def apply_imagemagick_slow():
         string += ' &'
         l.append(string)
     imagemagicks = {}
-    os.system('\n'.join(string)+'\nwait')
+    os.system('\n'.join(l)+'\nwait')
 for names in imagemagick_effects:
     name, arg = names.split(' ')
     add_imagemagick(name, arg)

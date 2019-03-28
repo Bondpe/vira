@@ -6,12 +6,15 @@ from PIL import Image, ImageTk, ImageShow, ImageDraw, ImageFilter
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.1.1'
+version='0.1.2'
 editor.tk.title('vira v'+version)
 generatePreview = False
 RGBHSV=(None, None, None, None, None, None)
 XY = 0,0
 mask_points = []
+mask_path = None
+mask_blur = 0
+selected_mask_point = None
 mask_last_x,mask_last_y = 0,0
 creating_mask = False
 # ---------------------------------Initialise functions
@@ -402,25 +405,44 @@ def create_mask():
 
 
 def update_mask():
-    global selected_stream, mask_points, creating_mask, mask_last_x, mask_last_y
-    if not creating_mask:
-        return
+    global selected_stream, mask_points, creating_mask, mask_last_x, mask_last_y, mask_path, selected_mask_point, mask_blur
     if mask_last_x == XY[0] and mask_last_y == XY[1]:
         return
+    if selected_mask_point is not None:
+        mask_points[selected_mask_point] = XY
+        mask_last_x,mask_last_y = XY[0], XY[1]
+        im = Image.new("RGB", (If.clip_size_Y, If.clip_size_X))
+        draw = ImageDraw.Draw(im)
+        draw.polygon(mask_points,fill=(255,255,255))
+        stream = selected_stream+streamerPos-1
+        im = im.filter(ImageFilter.GaussianBlur(radius=mask_blur))
+        id = mask_path
+        im.save('mask%d.png'%id)
+        If.videos[stream].mask = 'mask%d.png'%id
+        refreshPreview()
+        selected_mask_point = None
+        return
+    if not creating_mask:
+        for i in range(len(mask_points)):
+            if round(XY[0]/10) == round(mask_points[i][0]/10) and round(XY[1]/10) == round(mask_points[i][1]/10):
+                selected_mask_point = i
+                mask_last_x,mask_last_y = XY[0], XY[1]
+                return
     if len(mask_points) >= 3 and round(XY[0]/10) == round(mask_points[0][0]/10) and round(XY[1]/10) == round(mask_points[0][1]/10):
         print('saved mask')
         im = Image.new("RGB", (If.clip_size_Y, If.clip_size_X))
         draw = ImageDraw.Draw(im)
         draw.polygon(mask_points,fill=(255,255,255))
         stream = selected_stream+streamerPos-1
-        im = im.filter(ImageFilter.GaussianBlur(radius=simpledialog.askinteger(
+        mask_blur = simpledialog.askinteger(
                 "Border of that mask", "mask border sharpness\n(%s):" %
-                If.videos[stream].path, initialvalue=0)))
+                If.videos[stream].path, initialvalue=0)
+        im = im.filter(ImageFilter.GaussianBlur(radius=mask_blur))
         id = random.randint(0, 100000)
         im.save('mask%d.png'%id)
         If.videos[stream].mask = 'mask%d.png'%id
         creating_mask = False
-        mask_points = []
+        mask_path = id
         refreshPreview()
     else:
         print('added point')
@@ -858,13 +880,17 @@ while True:
         editor.canvas.create_image((200, 100), anchor='nw', image=previewImage)
     else:
         editor.canvas.create_rectangle(200, 100, 1200, 600, fill='#aaa')
+    current_mask_point = 0
     for xm,ym in mask_points:
         x = int(xm/If.clip_size_Y*1000+200)
         y = int(ym/If.clip_size_X*500+100)
         if round((editor.mouse[0]-200)*If.clip_size_Y/10000) == round(xm/10) and round((editor.mouse[1]-100)*If.clip_size_X/5000) == round(ym/10):
             editor.canvas.create_oval(x-5,y-5,x+5,y+5, outline='green', fill='blue')
+        elif current_mask_point == selected_mask_point:
+            editor.canvas.create_oval(x-5,y-5,x+5,y+5, outline='green', fill='red')
         else:
             editor.canvas.create_oval(x-5,y-5,x+5,y+5, outline='blue')
+        current_mask_point += 1
 
     # preview position line
     if previewFrame*streamerScale+streamerFrame*streamerScale > 0 and previewFrame*streamerScale+streamerFrame*streamerScale < 1000:
