@@ -2,6 +2,7 @@
 import ffmpeg_user, os, pickle, copy
 from PIL import Image
 import numpy as np
+from pydub import AudioSegment
 os.system('mkdir /tmp/vira')
 clip_size_X, clip_size_Y = 1920, 1080
 
@@ -99,14 +100,14 @@ def preview(l, effects):
 ##                os.system('zenity --error --text="applying effect error!"')
 ##        effects.apply_imagemagick_slow()
 ##    out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4')
-def export(pathOut, effects, turbo=True):
+def export(pathOut, effects, turbo=True, FPS=30):
     """export video"""
     out = ffmpeg_user.Empty()
     videosFlipped = copy.copy(videos)
     videosFlipped.reverse()
     vids = {}
     for v in videosFlipped:
-        vids[v] = ffmpeg_user.Video(v.path)
+        vids[v] = ffmpeg_user.Video(v.path, FPS=FPS)
     pathlist = 0
     for l in range(Len):
         for v in videos:
@@ -130,9 +131,11 @@ def export(pathOut, effects, turbo=True):
         effects.apply_imagemagick_slow()
     else:
         effects.apply_imagemagick()
+    audios = []
     for frame in range(pathlist):
         I = np.zeros((clip_size_X, clip_size_Y, 3))
         stream = len(videos)+1
+        last_video_ = None
         for v in videosFlipped:
             stream -= 1
             if v.start <= frame and v.start+v.durationF >= frame:
@@ -143,9 +146,22 @@ def export(pathOut, effects, turbo=True):
                 else:
                     mask = np.resize(np.asarray(Image.open(v.mask).convert('RGB')), (clip_size_X, clip_size_Y, 3))
                     I = I*mask/255+I2*(1-mask/255)
+                last_video_ = (vids[v].name, frameInside)
         Image.fromarray(np.uint8(I)).save('/tmp/vira/%s/frame%d.png'%(out.name, out.len))
         out.len += 1
-    out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4')
+        audios.append(last_video_)
+    a = AudioSegment.empty()
+    for u in audios:
+        if u is None:
+            a += AudioSegment.silent(duration=1000/FPS)
+        else:
+            i = AudioSegment.from_wav('/tmp/vira/%s/audio.wav'%u[0])[u[1]*1000/FPS:u[1]*1000/FPS+1000/FPS]
+            a = a+i
+    for v in vids:
+        vids[v].rm()
+    a.export('/tmp/vira/%s/audio.wav'%out.name, format='wav')
+    out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4', FPS=FPS)
+    out.rm()
 
 
 def pack(path='packed', effects=[]):

@@ -2,12 +2,13 @@ import time, pickle
 try:
     open('.vira_config')
 except:
-    pickle.dump([1920, 1080], open('.vira_config', 'wb'))
+    pickle.dump([1920, 1080, 30], open('.vira_config', 'wb'))
 vals = pickle.load(open('.vira_config', 'rb'))
-names = ['output x size', 'output y size']
+names = ['output x size', 'output y size', 'frames per second']
 def update():
-    global CLIP_X, CLIP_Y
-    CLIP_X, CLIP_Y = vals
+    global CLIP_X, CLIP_Y, FPS
+    CLIP_X, CLIP_Y, FPS = vals
+    FPS = 25 # due to bug, after that bug is fixed, we will remove this
 update()
 selectedVal = 0
 def show_window(Window):
