@@ -103,8 +103,13 @@ the same as empty except loads video"""
         f = open('/tmp/vira/name', 'w')
         f.write(path)
         f.close()
-        os.system('ffmpeg -r %d -i `cat /tmp/vira/name` /tmp/vira/%s/frame%%d.png /tmp/vira/%s/audio.wav' %
-                  (FPS, self.name, self.name))
+        os.system("ffmpeg -i `cat /tmp/vira/name` 2>&1 | grep Audio | awk '{print $0}' | tr -d , > /tmp/vira/stream")
+        if len(open('/tmp/vira/stream').read()) > 0:
+            os.system('ffmpeg -r %d -i `cat /tmp/vira/name` /tmp/vira/%s/frame%%d.png /tmp/vira/%s/audio.wav' %
+                      (FPS, self.name, self.name))
+        else:
+            os.system('ffmpeg -r %d -i `cat /tmp/vira/name` /tmp/vira/%s/frame%%d.png' %
+                      (FPS, self.name))
         num = 0
         while True:
             num += 1

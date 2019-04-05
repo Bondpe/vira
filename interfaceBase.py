@@ -155,7 +155,10 @@ def export(pathOut, effects, turbo=True, FPS=30):
         if u is None:
             a += AudioSegment.silent(duration=1000/FPS)
         else:
-            i = AudioSegment.from_wav('/tmp/vira/%s/audio.wav'%u[0])[u[1]*1000/FPS:u[1]*1000/FPS+1000/FPS]
+            if os.path.isfile('/tmp/vira/%s/audio.wav'%u[0]):
+                i = AudioSegment.from_wav('/tmp/vira/%s/audio.wav'%u[0])[u[1]*1000/FPS:u[1]*1000/FPS+1000/FPS]
+            else:
+                i = AudioSegment.silent(duration=1000/FPS)
             a = a+i
     for v in vids:
         vids[v].rm()
