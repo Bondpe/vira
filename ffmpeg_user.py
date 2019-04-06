@@ -23,7 +23,7 @@ class Empty:
         os.system('mkdir /tmp/vira/%s' % self.name)
         self.len = 1
 
-    def export(self, file='out.mp4', FPS=30):
+    def export(self, file='out.mp4', FPS=25):
         """exports video"""
         f = open('/tmp/vira/name', 'w')
         f.write(file)
@@ -97,7 +97,7 @@ class Empty:
 class Video(Empty):
     """basic video data type
 the same as empty except loads video"""
-    def __init__(self, path, name=None, FPS=30):
+    def __init__(self, path, name=None, FPS=25):
         Empty.__init__(self, name)
         self.path = path
         f = open('/tmp/vira/name', 'w')
@@ -105,10 +105,10 @@ the same as empty except loads video"""
         f.close()
         os.system("ffmpeg -i `cat /tmp/vira/name` 2>&1 | grep Audio | awk '{print $0}' | tr -d , > /tmp/vira/stream")
         if len(open('/tmp/vira/stream').read()) > 0:
-            os.system('ffmpeg -r %d -i `cat /tmp/vira/name` /tmp/vira/%s/frame%%d.png /tmp/vira/%s/audio.wav' %
+            os.system('ffmpeg -i `cat /tmp/vira/name` -r %d /tmp/vira/%s/frame%%d.png /tmp/vira/%s/audio.wav' %
                       (FPS, self.name, self.name))
         else:
-            os.system('ffmpeg -r %d -i `cat /tmp/vira/name` /tmp/vira/%s/frame%%d.png' %
+            os.system('ffmpeg -i `cat /tmp/vira/name` -r %d /tmp/vira/%s/frame%%d.png' %
                       (FPS, self.name))
         num = 0
         while True:

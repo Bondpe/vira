@@ -100,7 +100,7 @@ def preview(l, effects):
 ##                os.system('zenity --error --text="applying effect error!"')
 ##        effects.apply_imagemagick_slow()
 ##    out.export(str(pathOut) if str(pathOut) != '' else 'out.mp4')
-def export(pathOut, effects, turbo=True, FPS=30):
+def export(pathOut, effects, turbo=True, FPS=25):
     """export video"""
     out = ffmpeg_user.Empty()
     videosFlipped = copy.copy(videos)
@@ -114,13 +114,13 @@ def export(pathOut, effects, turbo=True, FPS=30):
             if v.start <= l and v.start+v.durationF >= l:
                 pathlist += 1
                 break
-    for frame in range(pathlist):
+    for frame in range(pathlist*FPS//25):
         I = np.zeros((clip_size_X, clip_size_Y, 3))
         stream = len(videos)+1
         for v in videosFlipped:
             stream -= 1
-            if v.start <= frame and v.start+v.durationF >= frame:
-                frameInside = frame-v.start+1
+            if v.start*FPS/25 <= frame and (v.start+v.durationF)*FPS/25 >= frame:
+                frameInside = frame-v.start*FPS/25+FPS/25
                 for effect in effects.applied_effects:
                     try:
                         effect.apply('/tmp/vira/%s/frame%d.png'%(vids[v].name,frameInside),
@@ -132,14 +132,14 @@ def export(pathOut, effects, turbo=True, FPS=30):
     else:
         effects.apply_imagemagick()
     audios = []
-    for frame in range(pathlist):
+    for frame in range(pathlist*FPS//25):
         I = np.zeros((clip_size_X, clip_size_Y, 3))
         stream = len(videos)+1
         last_video_ = None
         for v in videosFlipped:
             stream -= 1
-            if v.start <= frame and v.start+v.durationF >= frame:
-                frameInside = frame-v.start+1
+            if v.start*FPS/25 <= frame and (v.start+v.durationF)*FPS/25 >= frame:
+                frameInside = frame-v.start*FPS/25+FPS/25
                 I2 = np.resize(np.asarray(Image.open('/tmp/vira/%s/frame%d.png'%(vids[v].name,frameInside)).convert('RGB')), (clip_size_X, clip_size_Y, 3))
                 if v.mask is None:
                     I = I*v.transparency+I2*(1-v.transparency)

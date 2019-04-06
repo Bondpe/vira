@@ -6,7 +6,7 @@ from PIL import Image, ImageTk, ImageShow, ImageDraw, ImageFilter
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.1.4'
+version='0.1.5'
 editor.tk.title('vira v'+version)
 generatePreview = False
 RGBHSV=(None, None, None, None, None, None)
@@ -258,7 +258,7 @@ def export():
     mode = d.go()
     if mode == 2:
         return
-    If.export(path, effects, (mode == 0), 25)
+    If.export(path, effects, (mode == 0), 25*settings.FPS)
 
 
 editor.bind(export, 37, 26)
