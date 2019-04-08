@@ -1,4 +1,5 @@
-import time, pickle
+import pickle
+from tkinter import *
 try:
     open('.vira_config')
 except:
@@ -8,41 +9,36 @@ names = ['output x size', 'output y size', 'frames per second multiplier']
 def update():
     global CLIP_X, CLIP_Y, FPS
     CLIP_X, CLIP_Y, FPS = vals
+def load():
+    global CLIP_X, CLIP_Y, FPS, vals
+    vals = [CLIP_X, CLIP_Y, FPS]
+    pickle.dump(vals, open('.vira_config', 'wb'))
 update()
-selectedVal = 0
-def show_window(Window):
-    global currentVal, selectedVal
-    prefs = Window(500, 500, '#aba')
-    nums = '123456789'
-    currentVal = vals[selectedVal]
-    class NumReact:
-        def __init__(self, num):
-            self.num = num
-        def press(self):
-            global currentVal
-            currentVal *= 10
-            currentVal += int(self.num)
-            time.sleep(0.125)
-    for x in nums:
-        prefs.bind(NumReact(x).press, int(x)+9)
-    prefs.bind(NumReact('0').press, 19)
-    def earase():
-        global currentVal
-        currentVal = currentVal//10
-        time.sleep(0.125)
-    prefs.bind(earase, 22)
-    def click(x, y):
-        global selectedVal, currentVal
-        n = (y-10)//20
-        if n < len(vals) and n >= 0:
-            selectedVal = n
-            currentVal = vals[selectedVal]
-    prefs.create_clicker(0, 0, 500, 500, click)
-    while True:
-        prefs.canvas.create_rectangle(0, selectedVal*20+10, 500, selectedVal*20+30, fill='#aaa')
-        for tid in range(len(vals)):
-            prefs.canvas.create_text(250, tid*20+20, text=names[tid]+': '+str(vals[tid]))
-        vals[selectedVal] = currentVal
-        prefs.update()
-        update()
+def show_window():
+    root = Tk()
+    root.title('preview&export settings')
+    entrys = []
+    texts = []
+    for val in range(len(names)):
+        c = Canvas(root, width=200, height=20)
+        c.pack()
+        c.create_text(100, 10, text=names[val])
+        v = StringVar(root, value=vals[val])
+        e = Entry(root, textvariable=v)
+        e.pack()
+        entrys.append(e)
+        texts.append(v)
+    def update_all(evt):
+        for e in range(len(entrys)):
+            try:
+                vals[e] = int(entrys[e].get())
+            except:
+                texts[e].set('')
         pickle.dump(vals, open('.vira_config', 'wb'))
+        update()
+    root.bind('<Key>', update_all)
+    while True:
+        try:
+            root.update()
+        except:#_tkinter.TclError
+            break

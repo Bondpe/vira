@@ -1,12 +1,12 @@
 #!/usr/env/python3
-import sys, effects, settings, random, loadEffect
+import os, sys, effects, random, loadEffect, settings
 import interfaceBase as If
 from tkinter import filedialog, simpledialog
 from PIL import Image, ImageTk, ImageShow, ImageDraw, ImageFilter
 # ---------------------------------Create window
 from window import Window
 editor = Window(1400, 800, '#000')
-version='0.1.5'
+version='0.1.6'
 editor.tk.title('vira v'+version)
 generatePreview = False
 RGBHSV=(None, None, None, None, None, None)
@@ -17,12 +17,13 @@ mask_blur = 0
 selected_mask_point = None
 mask_last_x,mask_last_y = 0,0
 creating_mask = False
+mask_inv = False
 # ---------------------------------Initialise functions
 loadEffect.main(effects, editor, filedialog)
 
 def refreshPreview():
-        global generatePreview
-        generatePreview = True
+    global generatePreview
+    generatePreview = True
 
 
 editor.create_clicker(400, 780, 440, 800, refreshPreview)
@@ -31,7 +32,10 @@ editor.create_clicker(400, 780, 440, 800, refreshPreview)
 # ============================ File
 projectPath = None
 
-show_settings = lambda: settings.show_window(Window)
+def show_settings():
+    settings.show_window()
+    if len(If.videos) != 0:
+        refreshPreview()
 
 editor.bind(show_settings, 37, 30)
 
@@ -405,20 +409,14 @@ def create_mask():
 
 
 def update_mask():
-    global selected_stream, mask_points, creating_mask, mask_last_x, mask_last_y, mask_path, selected_mask_point, mask_blur
+    global selected_stream, mask_points, creating_mask, mask_last_x, mask_last_y, mask_path, selected_mask_point, mask_blur, mask_inv
     if mask_last_x == XY[0] and mask_last_y == XY[1]:
         return
     if selected_mask_point is not None:
         mask_points[selected_mask_point] = XY
         mask_last_x,mask_last_y = XY[0], XY[1]
-        im = Image.new("RGB", (If.clip_size_Y, If.clip_size_X))
-        draw = ImageDraw.Draw(im)
-        draw.polygon(mask_points,fill=(255,255,255))
         stream = selected_stream+streamerPos-1
-        im = im.filter(ImageFilter.GaussianBlur(radius=mask_blur))
-        id = mask_path
-        im.save('mask%d.png'%id)
-        If.videos[stream].mask = 'mask%d.png'%id
+        If.videos[stream].mask = (mask_points, mask_blur, mask_inv)
         refreshPreview()
         selected_mask_point = None
         return
@@ -430,25 +428,25 @@ def update_mask():
                 return
     if len(mask_points) >= 3 and round(XY[0]/10) == round(mask_points[0][0]/10) and round(XY[1]/10) == round(mask_points[0][1]/10):
         print('saved mask')
-        im = Image.new("RGB", (If.clip_size_Y, If.clip_size_X))
-        draw = ImageDraw.Draw(im)
-        draw.polygon(mask_points,fill=(255,255,255))
         stream = selected_stream+streamerPos-1
         mask_blur = simpledialog.askinteger(
                 "Border of that mask", "mask border sharpness\n(%s):" %
                 If.videos[stream].path, initialvalue=0)
-        im = im.filter(ImageFilter.GaussianBlur(radius=mask_blur))
-        id = random.randint(0, 100000)
-        im.save('mask%d.png'%id)
-        If.videos[stream].mask = 'mask%d.png'%id
+        If.videos[stream].mask = (mask_points, mask_blur, mask_inv)
         creating_mask = False
-        mask_path = id
         refreshPreview()
-    else:
+    elif creating_mask:
         print('added point')
         mask_points.append(XY)
         mask_last_x,mask_last_y = XY[0], XY[1]
 
+def invert_mask():
+    global mask_inv
+    if len(mask_points) >= 3:
+        stream = selected_stream+streamerPos-1
+        mask_inv = not mask_inv
+        If.videos[stream].mask = (mask_points, mask_blur, mask_inv)
+        refreshPreview()
 
 # ~~preview
 previewImage = None
@@ -695,12 +693,11 @@ editor.create_down_menu(0, 0, 30, 15, 'File',
 editor.create_down_menu(30, 0, 60, 15, 'Edit', [
                         'Add', 'Export', 'Pack'], [Add, export, pack])
 editor.create_down_menu(60, 0, 110, 15, 'Stream', [
-                        'Change start', 'Cut start', 'Cut duration', 'Enter transparency', 'Draw mask'],
-                        [change_start,   change_from, change_len, change_transparency, create_mask])
+                        'Change start', 'Cut start', 'Cut duration', 'Enter transparency', 'Draw mask', 'Invert mask'],
+                        [change_start,   change_from, change_len, change_transparency, create_mask, invert_mask])
 
 while True:
     update_mask()
-    If.clip_size_X, If.clip_size_Y = settings.CLIP_X, settings.CLIP_Y
     if streamerPos < 0:
         streamerPos = 0
     # streamer area fill
@@ -795,6 +792,16 @@ while True:
     # preview generator
     if oldPreviewFe != previewFrame or generatePreview:
         generatePreview = False
+        if len(If.videos) != 0 and (settings.CLIP_X, settings.CLIP_Y) == (0,0):
+            f = open('/tmp/vira/name', 'w')
+            f.write(If.videos[0].path)
+            f.close()
+            os.system(
+                    'ffmpeg -y -r 25 -ss 0 -i `cat /tmp/vira/name` -vframes 1  /tmp/vira/size.png')
+            If.clip_size_Y, If.clip_size_X = settings.CLIP_Y, settings.CLIP_X = Image.open('/tmp/vira/size.png').size
+            settings.load()
+        else:
+            If.clip_size_X, If.clip_size_Y = settings.CLIP_X, settings.CLIP_Y
         if If.preview(previewFrame, effects):
             img = Image.open('/tmp/vira/prew.gif')
             img = img.resize((1000, 500), Image.ANTIALIAS)

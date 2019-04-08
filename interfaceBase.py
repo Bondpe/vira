@@ -1,6 +1,6 @@
 #!/usr/env/python3
 import ffmpeg_user, os, pickle, copy
-from PIL import Image
+from PIL import Image, ImageTk, ImageShow, ImageDraw, ImageFilter
 import numpy as np
 from pydub import AudioSegment
 os.system('mkdir /tmp/vira')
@@ -64,7 +64,14 @@ def preview(l, effects):
             if v.mask is None:
                 I = I*v.transparency+I2*(1-v.transparency)
             else:
-                mask = np.resize(np.asarray(Image.open(v.mask).convert('RGB')), (clip_size_X, clip_size_Y, 3))
+                im = Image.new("RGB", (clip_size_Y, clip_size_X))
+                draw = ImageDraw.Draw(im)
+                draw.polygon(v.mask[0],fill=(255,255,255))
+                im = im.filter(ImageFilter.GaussianBlur(radius=v.mask[1]))
+                arMask = np.asarray(im)
+                if v.mask[2]:
+                    arMask = 255-arMask
+                mask = np.resize(arMask, (clip_size_X, clip_size_Y, 3))
                 I = I*mask/255+I2*(1-mask/255)
             succesful = True
     Image.fromarray(np.uint8(I)).save('/tmp/vira/prew.gif')
@@ -144,7 +151,14 @@ def export(pathOut, effects, turbo=True, FPS=25):
                 if v.mask is None:
                     I = I*v.transparency+I2*(1-v.transparency)
                 else:
-                    mask = np.resize(np.asarray(Image.open(v.mask).convert('RGB')), (clip_size_X, clip_size_Y, 3))
+                    im = Image.new("RGB", (clip_size_Y, clip_size_X))
+                    draw = ImageDraw.Draw(im)
+                    draw.polygon(v.mask[0],fill=(255,255,255))
+                    im = im.filter(ImageFilter.GaussianBlur(radius=v.mask[1]))
+                    arMask = np.asarray(im)
+                    if v.mask[2]:
+                        arMask = 255-arMask
+                    mask = np.resize(arMask, (clip_size_X, clip_size_Y, 3))
                     I = I*mask/255+I2*(1-mask/255)
                 last_video_ = (vids[v].name, frameInside)
         Image.fromarray(np.uint8(I)).save('/tmp/vira/%s/frame%d.png'%(out.name, out.len))
@@ -180,7 +194,7 @@ def pack(path='packed', effects=[]):
         f.close()
         os.system('ffmpeg -y -r 25 -i `cat /tmp/vira/name` /tmp/vira/out.avi')
         out.append((video.start, video.fromF, video.durationF,
-                    open('/tmp/vira/out.avi', 'rb').read(), video.transparency, open(video.mask, 'rb').read() if video.mask is not None else None))
+                    open('/tmp/vira/out.avi', 'rb').read(), video.transparency, video.mask))
     file = open(path, 'wb')
     pickle.dump([out, effects], file)
     file.close()
@@ -220,11 +234,7 @@ def openF(path):
                                     vid[0], vid[1], vid[2]))
                 if len(vid) > 4:
                     videos[-1].transparency = vid[4]
-                    if vid[5] is not None:
-                        file = open('/tmp/vira/unpacked/mask%d.png' % ID, 'wb')
-                        file.write(vid[5])
-                        file.close()
-                        videos[-1].mask = '/tmp/vira/unpacked/mask%d.png' % ID
+                    videos[-1].mask = vid[5]
                 ID += 1
             SAVABLE = False
         else:
