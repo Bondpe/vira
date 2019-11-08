@@ -8,7 +8,7 @@ git clone https://GitHub.com/bondpe/vira.git
 python3 vira/__main__.py
 ```
 # how to use:
-This is a completely renewed version of vira. The older version was completely different - slower, undevelopable etc.
+This is a completely renewed version of vira. The older version was completely different (slower, undevelopable, only visual fx support etc.)
 <br /><br />
 When you start a script, you see somewhat confusing window. To begin creating a project, you can click an 'Add' button, select a category and a datatype (for example, 'File>tmp-access video from file' which will load a video), and fill in all the popup inputs. Then you can start adding overlays ('Combine>colorkey stream'), reordering them (second button on right will move a datapack 1 stream up). If you want to delete the stream, click on the red cross on the right.
 <br /><br />
