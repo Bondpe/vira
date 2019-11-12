@@ -106,6 +106,14 @@ class AlphaPercent:
         return AlphaPercent(alpha/100)
     def __str__(self):
         return 'Alpha(%f)'%self.alpha
+class Percent:
+    def __init__(self, part=1):
+        self.part = part
+    def get(*args, **kwargs):
+        part = simpledialog.askinteger('enter %s'%kwargs.get('name', 'value'), 'enter %s percentage'%kwargs.get('name', 'value'))
+        return Percent(part/100)
+    def __str__(self):
+        return 'Part(%f)'%self.part
 class Integer:
     def __init__(self, num=1):
         self.num = num

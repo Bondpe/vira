@@ -42,6 +42,8 @@ class Basic:
         pass
     def getStartEnd(self):
         """change this to return None or (StartTime, EndTime), for non-endless streams"""
+        if 'child' in self.args:
+            return self.args['child'].getStartEnd()
         return None
     def get_name(self):
         if 'child' in self.argtype and self.argtype['child'] == 'c':
@@ -132,8 +134,6 @@ class Alpha(Basic):
             a,b=matchImageSize(a,b)
             return self.args['mode'].run(a,b,self.args['alpha'].alpha)
         return a
-    def getStartEnd(self):
-        return self.args['child'].getStartEnd()
 
 class Layer(Basic):
     category = 'Combine'
