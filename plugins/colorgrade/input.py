@@ -17,6 +17,7 @@ class MultiStream:
         assert len(comp) > 0
         tk = Tk()
         tk.title('define streams to join')
+        tk.resizable(False,False)
         chooser = Canvas(tk, width=1000,height=len(comp)*20)
         chooser.pack()
         streams = []
@@ -69,6 +70,7 @@ class Resolution:
     def get(*args, **kwargs):
         resol = Tk()
         resol.title('enter resolution')
+        resol.resizable(False,False)
         Label(resol, text='width: ').pack()
         x = Entry(resol)
         x.pack()
@@ -86,6 +88,7 @@ class Resolution:
                 resol.update()
             except:
                 break
+        assert ret is not None
         return ret
     def __str__(self):
         return 'Resolution'+str(self.r)
@@ -117,21 +120,33 @@ class Percent:
 class Integer:
     def __init__(self, num=1):
         self.num = num
+    def display(self,cvs,x,y):
+        cvs.create_rectangle(x,y,x-50,y+25,fill='white')
+        cvs.create_text(x-50,y+12,anchor='w',text=str(self.num),fill='blue')
+        cvs.create_polygon(x-17,y+10,x-3,y+10,x-10,y+1, fill='black')
+        cvs.create_polygon(x-17,y+15,x-3,y+15,x-10,y+24,fill='black')
     def get(*args, **kwargs):
+        if kwargs.get('clickdata',None)!=None:
+            if kwargs.get('clickdata',None)['x'] > 480:
+                if kwargs.get('clickdata',None)['y']<=12:
+                    return Integer(kwargs['old'].num+1)
+                else:
+                    return Integer(kwargs['old'].num-1)
         num = simpledialog.askinteger('enter %s'%kwargs.get('name', 'value'), 'enter %s'%kwargs.get('name', 'value'))
         return Integer(num)
     def __str__(self):
         return 'Integer(%d)'%self.num
 class MixModes:
     def __init__(self, mode='add'):
-        self.modes = {'add':(lambda a,b,h: a*h+b*(1-h)), 'multiply':(lambda a,b,h: a**h*b**(1-h)), 'dissolve':(lambda a,b,h: random.choice([a]*int(h*100)+[b]*int((1-h)*100))), 'screen':(lambda a,b,h:1-((1-a)**h*(1-b)**(1-h))), 'overlay':(lambda a,b,h: ((a**h*b**(1-h)) if a < 0.5 else (1-((1-a)**h*(1-b)**(1-h))))), 'divide':(lambda a,b,h: (a*h)/(b*(1-h))), 'substract':(lambda a,b,h:a*h-b*(1-h)), 'difference':(lambda a,b,h:abs(a*h-b*(1-h)))}
+        self.modes = {'alpha':(lambda a,b,h: a*h+b*(1-h)), 'add':(lambda a,b,h: a*h+b), 'substract':(lambda a,b,h:b-a*h), 'multiply':(lambda a,b,h: a**h*b**(1-h)), 'dissolve':(lambda a,b,h: random.choice([a]*int(h*100)+[b]*int((1-h)*100))), 'screen':(lambda a,b,h:1-((1-a)**h*(1-b)**(1-h))), 'overlay':(lambda a,b,h: ((a**h*b**(1-h))*(a<0.5)+(1-((1-a)**h*(1-b)**(1-h))))*(a>=0.5)), 'divide':(lambda a,b,h: (a**h)/(b**(1-h))), 'alpha_substract':(lambda a,b,h:a*h-b*(1-h)), 'difference':(lambda a,b,h:abs(a*h-b*(1-h)))}
         self.mode = self.modes[mode]
         self.name = mode
     def get(*args, **kwargs):
-        modes = {'add':(lambda a,b,h: a*h+b*(1-h)), 'multiply':(lambda a,b,h: a**h*b**(1-h)), 'dissolve':(lambda a,b,h: random.choice([a]*int(h*100)+[b]*int((1-h)*100))), 'screen':(lambda a,b,h:1-((1-a)**h*(1-b)**(1-h))), 'overlay':(lambda a,b,h: ((a**h*b**(1-h)) if a < 0.5 else (1-((1-a)**h*(1-b)**(1-h))))), 'divide':(lambda a,b,h: (a*h)/(b*(1-h))), 'substract':(lambda a,b,h:a*h-b*(1-h)), 'difference':(lambda a,b,h:abs(a*h-b*(1-h)))}
+        modes = {'alpha':(lambda a,b,h: a*h+b*(1-h)), 'add':(lambda a,b,h: a*h+b), 'substract':(lambda a,b,h:b-a*h), 'multiply':(lambda a,b,h: a**h*b**(1-h)), 'dissolve':(lambda a,b,h: random.choice([a]*int(h*100)+[b]*int((1-h)*100))), 'screen':(lambda a,b,h:1-((1-a)**h*(1-b)**(1-h))), 'overlay':(lambda a,b,h: ((a**h*b**(1-h))*(a<0.5)+(1-((1-a)**h*(1-b)**(1-h))))*(a>=0.5)), 'divide':(lambda a,b,h: (a**h)/(b**(1-h))), 'alpha_substract':(lambda a,b,h:a*h-b*(1-h)), 'difference':(lambda a,b,h:abs(a*h-b*(1-h)))}
         names = sorted(list(modes.keys()))
         tk = Tk()
         tk.title('mixing mode')
+        tk.resizable(False,False)
         c = Canvas(tk, width=100, height=20*len(names))
         c.pack()
         name = None
@@ -148,7 +163,8 @@ class MixModes:
             c.update()
         tk.destroy()
         return MixModes(name)
-    def run(self, a, b, h):
+    def run(self, a, b, h,t=0):
+        random.seed(t)
         def apply(a,b,h):
             a = self.mode(a/256,b/256,h)
             if a > 1:
@@ -156,21 +172,22 @@ class MixModes:
             if a < 0:
                 a = 0
             return int(a*256)
-        if self.name in ['add', 'multiply', 'screen', 'divide', 'substract', 'difference']:
+        if self.name not in ['dissolve']:
             return self.mode(a/256,b/256,h)*256
         return np.vectorize(apply)(a,b,h)
     def __str__(self):
-        return 'Mix%s()'%self.name.capitalise()
+        return 'Mix%s()'%self.name.capitalize()
 class LayerModes:
     def __init__(self, mode='add'):
-        self.modes = {'add':(lambda a,b: a+b), 'multiply':(lambda a,b: a*b), 'screen':(lambda a,b:1-((1-a)*(1-b))), 'overlay':(lambda a,b: ((a*b) if a < 0.5 else (1-((1-a)*(1-b))))), 'divide':(lambda a,b: a/b), 'substract':(lambda a,b:a-b), 'difference':(lambda a,b:abs(a-b)), 'lighten only':(lambda a,b:np.maximum(a,b)), 'darken only':(lambda a,b:np.minimum(a,b))}
+        self.modes = {'add':(lambda a,b: a+b), 'multiply':(lambda a,b: a*b), 'screen':(lambda a,b:1-((1-a)*(1-b))), 'overlay':(lambda a,b: ((a*b)*(a < 0.5)+(1-((1-a)*(1-b))))*(a <= 0.5)), 'divide':(lambda a,b: a/b), 'substract':(lambda a,b:a-b), 'difference':(lambda a,b:abs(a-b)), 'lighten only':(lambda a,b:np.maximum(a,b)), 'darken only':(lambda a,b:np.minimum(a,b))}
         self.mode = self.modes[mode]
         self.name = mode
     def get(*args, **kwargs):
-        modes = {'add':(lambda a,b: a+b), 'multiply':(lambda a,b: a*b), 'screen':(lambda a,b:1-((1-a)*(1-b))), 'overlay':(lambda a,b: ((a*b) if a < 0.5 else (1-((1-a)*(1-b))))), 'divide':(lambda a,b: a/b), 'substract':(lambda a,b:a-b), 'difference':(lambda a,b:abs(a-b)), 'lighten only':(lambda a,b:np.maximum(a,b)), 'darken only':(lambda a,b:np.minimum(a,b))}
+        modes = {'add':(lambda a,b: a+b), 'multiply':(lambda a,b: a*b), 'screen':(lambda a,b:1-((1-a)*(1-b))), 'overlay':(lambda a,b: ((a*b)*(a < 0.5)+(1-((1-a)*(1-b))))*(a <= 0.5)), 'divide':(lambda a,b: a/b), 'substract':(lambda a,b:a-b), 'difference':(lambda a,b:abs(a-b)), 'lighten only':(lambda a,b:np.maximum(a,b)), 'darken only':(lambda a,b:np.minimum(a,b))}
         names = sorted(list(modes.keys()))
         tk = Tk()
         tk.title('mixing mode')
+        tk.resizable(False,False)
         c = Canvas(tk, width=100, height=20*len(names))
         c.pack()
         name = None
@@ -188,18 +205,9 @@ class LayerModes:
         tk.destroy()
         return LayerModes(name)
     def run(self, a, b):
-        def apply(a,b):
-            a = self.mode(a/256,b/256)
-            if a > 1:
-                a = 1
-            if a < 0:
-                a = 0
-            return int(a*256)
-        if self.name in ['add', 'multiply', 'screen', 'divide', 'substract', 'difference']:
-            return self.mode(a/256,b/256)*256
-        return np.vectorize(apply)(a,b)
+        return self.mode(a/256,b/256)*256
     def __str__(self):
-        return 'Layer%s()'%self.name.capitalise()
+        return 'Layer%s()'%self.name.capitalize()
 class TimeSegment:
     def __init__(self, *args):
         if len(args) == 0:
@@ -217,6 +225,7 @@ class TimeSegment:
     def get(*args, **kwargs):
         time = Tk()
         time.title('enter time segment')
+        time.resizable(False,False)
         Label(time, text='start: ').pack()
         x = Entry(time)
         x.pack()
@@ -234,6 +243,7 @@ class TimeSegment:
                 time.update()
             except:
                 break
+        assert ret is not None
         return ret
     def __str__(self):
         return 'Time%s'%str(self.time)
@@ -251,6 +261,11 @@ class Color:
         self.r = r
         self.g = g
         self.b = b
+    def display(self,cvs,x,y):
+        r,g,b=self.color
+        color = '#'+hex(r)[2:].zfill(2)+hex(g)[2:].zfill(2)+hex(b)[2:].zfill(2)
+        cvs.create_rectangle(x,y,x-200,y+25,fill=color)
+        cvs.create_text(x,y+12,anchor='e',text=color+'-'+str(self),fill='#'+hex(255-r)[2:].zfill(2)+hex(255-g)[2:].zfill(2)+hex(255-b)[2:].zfill(2))
     def get(*args, **kwargs):
         color = colorchooser.askcolor((0,0,0))[0]
         r,g,b = int(color[0]), int(color[1]), int(color[2])
@@ -275,6 +290,7 @@ class Point:
     def get(*args, **kwargs):
         tk = Tk()
         tk.title('choose point')
+        tk.resizable(False,False)
         canvas = Canvas(tk, width=1000, height=510)
         canvas.pack()
         time = 0
@@ -322,6 +338,7 @@ class PointArray:
     def get(*args, **kwargs):
         tk = Tk()
         tk.title('choose points')
+        tk.resizable(False,False)
         canvas = Canvas(tk, width=1000, height=530)
         canvas.pack()
         time = 1
@@ -371,35 +388,3 @@ class PointArray:
         return PointArray(out)
     def __str__(self):
         return 'PointArray()'
-
-class Curve:
-    def __init__(self, x, y):
-        self.fun = scipy.interpolate.interp1d(np.array(x),np.array(y),kind='cubic')
-    def get(*args, **kwargs):
-        tk = Tk()
-        tk.title('Curve editor: %s'%kwargs.get('name', 'Untitled'))
-        canvas = Canvas(width=255, height=255)
-        canvas.pack()
-        xd = [0,63,127,191,255]
-        yd = [0,63,127,191,255]
-        def update():
-            fun = scipy.interpolate.interp1d(np.array(xd),np.array(yd),kind='cubic')
-            canvas.delete('all')
-            for x in range(255):
-                y = int(fun(x))
-                canvas.create_rectangle(x,y,x+1,y+1, outline=None, fill='#000')
-            for i in range(len(xd)):
-                canvas.create_rectangle(xd[i],yd[i],xd[i]+1,yd[i]+1, outline=None, fill='#f0f')
-            canvas.update()
-        def click(evt):
-            xd.append(evt.x)
-            yd.append(evt.y)
-        canvas.bind('<Button-1>', click)
-        while True:
-            try:
-                update()
-            except:
-                break
-        return Curve(xd,yd)
-    def __str__(self):
-        pass
