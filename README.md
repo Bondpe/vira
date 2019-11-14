@@ -11,7 +11,7 @@ python3 vira/__main__.py
 # not using linux?
 Try changing some values in 'constants.py' file!
 # something doesn't work?
-Make sure if that's not related with dependencies. You can also try disabling addons in 'constants.py' file. Also, if you think that's a bug, please report it on the issues tab.
+Make sure if that's not related to dependencies. You can also try disabling addons in 'constants.py' file. Also, if you think that's a bug, please report it on the issues tab.
 # how to use:
 This is a completely renewed version of vira. The older version was completely different (slower, undevelopable, only visual fx support etc.)
 <br /><br />
