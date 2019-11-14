@@ -132,7 +132,7 @@ class Alpha(Basic):
             return b
         if a is not None and b is not None:
             a,b=matchImageSize(a,b)
-            return self.args['mode'].run(a,b,self.args['alpha'].alpha)
+            return self.args['mode'].run(a,b,self.args['alpha'].alpha,time)
         return a
 
 class Layer(Basic):
@@ -335,10 +335,13 @@ class TVideo(Basic):
             del self.cacheold[0]
         return frame
     def sound(self, time, inval):
-        rate, data = scipy.io.wavfile.read(self.tmp+'/audio.wav')
-        val = data[int(time*rate)]
-        print(val)
-        return val
+        try:
+            rate, data = scipy.io.wavfile.read(self.tmp+'/audio.wav')
+            val = data[int(time*rate)]
+            del data
+            return val
+        except:
+            return inval
     def getStartEnd(self):
         return (0, self.frames/self.fps)
     def setup(self):
@@ -353,12 +356,14 @@ class TVideo(Basic):
         self.MAXLEN = 10
         self.tmp = constants.get_temp_path()
         os.mkdir(self.tmp)
-        out, err = (
-            ffmpeg
-            .input(self.args['file'].data().path)
-            .output(self.tmp+'/audio.wav')
-            .run()
-        )
+        audio = any(x['codec_type'] == 'audio' for x in probe['streams'])
+        if audio:
+            out, err = (
+                ffmpeg
+                .input(self.args['file'].data().path)
+                .output(self.tmp+'/audio.wav')
+                .run()
+            )
         out, err = (
             ffmpeg
             .input(self.args['file'].data().path)

@@ -56,18 +56,11 @@ class Editor:
         self.root_comp = self.composition
         self.path = path
 
-        if self.tk is not None:
-            self.tk.destroy()
-        self.tk = Tk()
-        self.tk.title('vira')
-        self.tk.config(bg=constants.theme['bg'])
+        self.setup()
+
         self.selected = system_data['selected']
         self.play = False
         self.time = system_data['time']
-        self.parts = []
-        ip = constants.icon_path
-        self.images = {'export': PhotoImage(
-            file=ip+'export.gif'), 'resort': PhotoImage(file=ip+'resort.gif')}
 
         areas = system_data['areas']
 
@@ -77,11 +70,8 @@ class Editor:
         self.update_data()
 
     def new(self):
-        if self.tk is not None:
-            self.tk.destroy()
-        self.tk = Tk()
-        self.tk.config(bg=constants.theme['bg'])
-        self.tk.title('vira')
+        self.setup()
+
         self.composition = self.root_comp = []
         self.selected = 0
         datamanagement.data = {}
@@ -89,9 +79,6 @@ class Editor:
         self.play = False
         self.time = 1
         self.parts = []
-        ip = constants.icon_path
-        self.images = {'export': PhotoImage(
-            file=ip+'export.gif'), 'resort': PhotoImage(file=ip+'resort.gif')}
 
         self.update_data(False)
 
@@ -100,6 +87,18 @@ class Editor:
         Preview(self)
         Composition(self)
         EditorMenu(self)
+    def setup(self):
+        if self.tk is not None:
+            self.tk.destroy()
+        self.tk = Tk()
+        self.tk.title('vira')
+        self.tk.config(bg=constants.theme['bg'])
+
+        self.parts = []
+
+        ip = constants.icon_path
+        self.images = {'export': PhotoImage(
+            file=ip+'export.gif'), 'resort': PhotoImage(file=ip+'resort.gif')}
 
 
 class EditorMenu:
@@ -226,7 +225,7 @@ class EditorMenu:
 
 
 class Preview:
-    def __init__(self, editor, side='top', width=500, height=250):
+    def __init__(self, editor, side='top', width=16*35, height=9*35):
         self.editor = editor
         self.tk = self.editor.tk
         self.editor.system_data['areas'].append(
@@ -331,19 +330,21 @@ class Composition:
         self.button_close.create_line(0, 0, 10, 10)
         self.button_close.create_line(0, 10, 10, 0)
         self.button_close.bind('<Button-1>', self.close)
-        self.button_close.pack(side='right')
+        self.button_close.grid(row=1,column=2)
         self.editor.parts.append(self)
         self.editor.system_data['areas'].append(
             [self.__class__, {'side': side}])
         self.system_data_self_id = len(self.editor.system_data['areas'])-1
         self.canvas = Canvas(self.frame, width=1000, height=525, bg=constants.theme['bg'])
-        self.canvas.pack(side='bottom')
+        self.canvas.grid(row=2,column=1)
         self.pos = [0, 0]
         self.scale = 25
         self.selected = 0
-        Button(self.frame, text='Add', command=self.add, bg=constants.theme['bg']).pack(side='bottom')
-        Button(self.frame, text='Go to root composition',
-               command=self.root, bg=constants.theme['bg']).pack(side='bottom')
+        btnF = Frame(self.frame)
+        btnF.grid(row=1,column=1)
+        Button(btnF, text='Add', command=self.add, bg=constants.theme['bg']).pack(side='left')
+        Button(btnF, text='Go to root composition',
+               command=self.root, bg=constants.theme['bg']).pack(side='right')
         self._initialise_binds()
 
     def root(self):
@@ -467,11 +468,12 @@ class Composition:
                     v = append.argtype[k]
                     if v == 'c':
                         append.args[k] = self.editor.composition[self.selected][0]
-                        del self.editor.composition[self.selected]
                     else:
                         append.args[k] = v.get(
                             composition=self.editor.composition, name=k)
                 append.setup()
+                if 'c' in list(append.argtype.values()):
+                    del self.editor.composition[self.selected]
                 self.editor.composition.insert(self.selected, [append, 0])
         c.bind('<Button-1>', click)
 
@@ -505,7 +507,7 @@ class Composition:
         n = 0
         for i in self.editor.composition:
             self.canvas.create_rectangle(
-                0, n*20+self.pos[1], 1000, n*20+20+self.pos[1], fill=constants.theme['fbg'])
+                0, n*20+self.pos[1], 1000, n*20+20+self.pos[1], fill=constants.theme['hbg'] if self.selected == n else constants.theme['fbg'])
             startEnd = i[0].getStartEnd()
             if startEnd is not None:
                 self.canvas.create_rectangle(startEnd[0]*self.scale+self.pos[0],
@@ -563,17 +565,35 @@ class AddMenu:
         self.button_close.bind('<Button-1>', self.close)
         self.button_close.grid(row=1,column=2)
         self.editor.parts.append(self)
-        self.canvas = Canvas(self.frame, width=500, height=1000, bg=constants.theme['bg'])
+        self.canvas = Canvas(self.frame, width=350, height=900, bg=constants.theme['bg'])
         self.canvas.grid(row=2,column=1)
-        self.pos = 0
+        self.pos = 25
         self.shownCategs = []
         self.canvas.bind('<Button-1>', self.click)
+        self.canvas.bind('<Button-4>', self.up)
+        self.canvas.bind('<Button-5>', self.down)
+        self.canvas.bind('<Motion>', self.move)
+
+        self.hints = []
+        self.hintsDisplay = []
+    def up(self,evt):
+        self.pos+=5
+    def down(self,evt):
+        self.pos-=5
+    def move(self,evt):
+        self.hintsDisplay = []
+        for x1,y1,x2,y2,text in self.hints:
+            if evt.x in range(x1,x2) and evt.y in range(y1,y2):
+                self.hintsDisplay.append([evt.x,evt.y,text])
 
     def close(self, evt):
         self.frame.destroy()
         self.editor.parts.remove(self)
         del self.editor.system_data['areas'][self.system_data_self_id]
     def update(self):
+        self.hints = []
+        if self.pos>25:
+            self.pos=25
         self.canvas.delete('all')
         types = {}
         catg = []
@@ -586,16 +606,37 @@ class AddMenu:
         pos = self.pos
         self.btns = []
         for category in catg:
-            self.canvas.create_text(0,pos,text=category,anchor='nw',fill=constants.theme['fg'])
+            self.canvas.create_rectangle(0,pos,350,pos+25,fill=constants.theme['fbg'],outline=constants.theme['hbg'])
+            self.canvas.create_text(25,pos+12,text=category,anchor='w',fill=constants.theme['fg'])
             pos+=25
             if category in self.shownCategs:
+                self.canvas.create_polygon(10,pos-20,15,pos-20,12,pos-15,fill=constants.theme['fg'])
                 self.btns.append(['hide',category])
                 for item in types[category]:
-                    self.canvas.create_text(50,pos,text=item.Tname,anchor='nw',fill=constants.theme['fg'])
+                    self.canvas.create_rectangle(0,pos,350,pos+25,fill=constants.theme['bg'])
+                    self.canvas.create_text(50,pos+12,text=item.Tname,anchor='w',fill=constants.theme['fg'])
+                    if 'c' in list(item.argtype.values()):
+                        self.canvas.create_oval(5, pos+5, 20, pos+20, fill=constants.theme['selected'])
+                        self.canvas.create_text(13, pos+12, fill=constants.theme['mark'], text='rc')
+                        self.hints.append([5, pos+5, 20, pos+20, 'requires a child'])
                     pos+=25
                     self.btns.append(['add',item])
             else:
+                self.canvas.create_polygon(10,pos-15,10,pos-10,15,pos-12,fill=constants.theme['fg'])
                 self.btns.append(['show',category])
+        self.canvas.create_rectangle(0,0,350,25,fill=constants.theme['fbg'])
+        self.canvas.create_text(10,12,text='fx',font=('Comfortaa',12),fill=constants.theme['hbg'],anchor='w')
+        self.canvas.create_text(325,12,text='effects,streams,etc. library',font=('Comfortaa',10),fill=constants.theme['bg'],anchor='e')
+        for x,y,text in self.hintsDisplay:
+            if x>350/2:
+                i=self.canvas.create_text(x,y,text=text,anchor='se', fill=constants.theme['fg'])
+                r=self.canvas.create_rectangle(self.canvas.bbox(i), fill=constants.theme['hbg'])
+                self.canvas.tag_lower(r,i)
+
+            else:
+                i=self.canvas.create_text(x, y,text=text,anchor='sw', fill=constants.theme['fg'])
+                r=self.canvas.create_rectangle(self.canvas.bbox(i), fill=constants.theme['hbg'])
+                self.canvas.tag_lower(r,i)
     def click(self, evt):
         action, data = self.btns[(evt.y-self.pos)//25]
         if action == 'hide':
@@ -611,11 +652,12 @@ class AddMenu:
                 v = append.argtype[k]
                 if v == 'c':
                     append.args[k] = self.editor.composition[self.editor.selected][0]
-                    del self.editor.composition[self.editor.selected]
                 else:
                     append.args[k] = v.get(
                         composition=self.editor.composition, name=k)
             append.setup()
+            if 'c' in list(append.argtype.values()):
+                del self.editor.composition[self.editor.selected]
             self.editor.composition.insert(self.editor.selected, [append, 0])
 
 class InheritTree:
@@ -635,11 +677,17 @@ class InheritTree:
         self.button_close.bind('<Button-1>', self.close)
         self.button_close.grid(row=1,column=2)
         self.editor.parts.append(self)
-        self.canvas = Canvas(self.frame, width=250, height=1000, bg=constants.theme['bg'])
+        self.canvas = Canvas(self.frame, width=500, height=900, bg=constants.theme['bg'])
         self.canvas.grid(row=2,column=1)
         self.open = 0
         self.pos = 0
         self.canvas.bind('<Button-1>', self.click)
+        self.canvas.bind('<Button-4>', self.up)
+        self.canvas.bind('<Button-5>', self.down)
+    def up(self,evt):
+        self.pos+=10
+    def down(self,evt):
+        self.pos-=10
 
     def close(self, evt):
         self.frame.destroy()
@@ -652,7 +700,7 @@ class InheritTree:
         pos = self.pos
         i = 0
         out = None
-        while item.is_box():
+        while True:
             if evt.y in range(pos,pos+25):
                 out = [0,i]
             pos+=25
@@ -663,30 +711,35 @@ class InheritTree:
                         args.append(a)
                 for arg in args:
                     if evt.y in range(pos,pos+25):
-                        out = [1,i,item,arg]
+                        out = [1,i,item,arg,evt.y-pos]
                     pos+=25
-            item = item.args['child']
-            i+=1
+            if item.is_box():
+                item = item.args['child']
+                i+=1
+            else:
+                break
         if out is None:
             self.edit(i)
+            self.open=i
         if out[0] == 0:
             n = out[1]
-            if evt.x > 230:
+            if evt.x > 480:
                 self.delete(n-1)
-            elif evt.x > 210:
+            elif evt.x > 460:
                 self.edit(n)
             else:
                 self.open=n
             return
         item = out[2]
-        name = out[-1]
+        name = out[-2]
         args = []
         for a in item.args:
             if a != 'child':
                 args.append(a)
         arg = item.argtype[name].get(
             composition=self.editor.composition,
-            name=name, old=item.args[name])
+            name=name, old=item.args[name],
+            clickdata = {'x':evt.x,'y':out[-1]})
         if isinstance(arg, list) and arg[0] == 'composition':
             self.editor.composition = arg[1]
         else:
@@ -759,20 +812,22 @@ class InheritTree:
             return False
 
     def update(self):
+        if self.pos>0:
+            self.pos=0
         self.canvas.delete('all')
         if self.editor.selected >= len(self.editor.composition):
             return
         item = self.editor.composition[self.editor.selected][0]
         pos = self.pos
         i = 0
-        while item.is_box():
+        while True:
             self.canvas.create_rectangle(
-                0, pos, 250, pos+25, fill=constants.theme['hbg'])
+                0, pos, 500, pos+25, fill=constants.theme['hbg'])
             self.canvas.create_text(10, pos, text=item.name, anchor='nw', fill='white')
-            self.canvas.create_rectangle(230,pos,250,pos+25,fill=constants.theme['fg'])
-            self.canvas.create_text(240,pos+12,fill=constants.theme['mark'],text='x')
-            self.canvas.create_rectangle(210,pos,230,pos+25,fill=constants.theme['fg'])
-            self.canvas.create_text(220,pos+12,fill=constants.theme['mark'],text='e')
+            self.canvas.create_rectangle(480,pos,500,pos+25,fill=constants.theme['fg'])
+            self.canvas.create_text(490,pos+12,fill=constants.theme['mark'],text='x')
+            self.canvas.create_rectangle(460,pos,480,pos+25,fill=constants.theme['fg'])
+            self.canvas.create_text(470,pos+12,fill=constants.theme['mark'],text='e')
             pos+=25
             if i == self.open:
                 self.canvas.create_polygon(5,pos-20,5,pos-10,10,pos-15, fill=constants.theme['fg'])
@@ -781,10 +836,17 @@ class InheritTree:
                     if a != 'child':
                         args.append(a)
                 for arg in args:
-                    self.canvas.create_text(25,pos,text=arg,anchor='nw',fill=constants.theme['selected'])
+                    self.canvas.create_text(25,pos,text=arg,anchor='nw',fill=constants.theme['fg'])
+                    try:
+                        item.args[arg].display(self.canvas,500,pos)
+                    except:
+                        self.canvas.create_text(500,pos,text=str(item.args[arg]),anchor='ne',fill=constants.theme['sfg'])
                     pos+=25
-            item = item.args['child']
-            i += 1
+            if item.is_box():
+                item = item.args['child']
+                i += 1
+            else:
+                break
 
 
 if __name__ == '__main__':

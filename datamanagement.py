@@ -72,3 +72,5 @@ class Name:
                 return Name(name)
     def data(self):
         return data[self.name]
+    def __str__(self):
+        return 'File(%s)'%repr(self.name)

@@ -27,6 +27,6 @@ def get_temp_path():
     return temp_path+str(used_pathes)
 
 def get_plugin_list():
-    return ['imagemagick', 'imageeffects', 'colorgrade']
+    return ['imagemagick', 'imageeffects', 'colorgrade'] # imagemagick broke
 
-theme = {'bg':'#333','hbg':'#555', 'fbg':'#000', 'selected':'#033', 'non-selected':'#330', 'fg':'#fff', 'sfg':'#aaa', 'mark':'red'}
+theme = {'bg':'#111','hbg':'#555', 'fbg':'#000', 'selected':'#033', 'non-selected':'#330', 'fg':'#fff', 'sfg':'#aaa', 'mark':'red'}
