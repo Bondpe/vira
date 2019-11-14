@@ -1,25 +1,24 @@
 # vira
 Video editor for raspberry pi.<br />
 DEVELOPMENT IN PROGRESS! If you discover a bug, please report it on issues tab.<br />
-Hopefuly, not only for raspberry pi.
+Hopefuly, not only for raspberry pi.<br />
+Non-frame-based.
 # how to run
 ```
 git clone https://GitHub.com/bondpe/vira.git
 python3 vira/__main__.py
 ```
+# not using linux?
+Try changing some values in 'constants.py' file!
+# something doesn't work?
+Make sure if that's not related with dependencies. You can also try disabling addons in 'constants.py' file. Also, if you think that's a bug, please report it on the issues tab.
 # how to use:
 This is a completely renewed version of vira. The older version was completely different (slower, undevelopable, only visual fx support etc.)
 <br /><br />
-When you start a script, you see somewhat confusing window. To begin creating a project, you can click an 'Add' button, select a category and a datatype (for example, 'File>tmp-access video from file' which will load a video), and fill in all the popup inputs. Alternatively you can now choose it from the menu on the right. Then you can start adding overlays ('Combine>colorkey stream'), reordering them (second button on right will move a datapack 1 stream up). If you want to delete the stream, click on the red cross on the right.
+The new window is seperated in four parts. The bottom area contains streams list (the bottom stream displays over others). The area on top contains the preview. The left area is the current stream editor. The area on right is for adding streams.
 <br /><br />
-To navigate streams area, use your middle mouse button for dragging, and drag with right mouse button to zoom in/out. When you left-click, you select the stream and move the time cursor to that position.
-<br /><br />
-If you want to edit any streams input data, then use the menu on the left. You can also enter new streams name there , by clicking e > entering a name >'save new name' after done.
-<br /><br />
-If you have some overlay datapacks, their names will appear on the left. To delete an overlay, simply left-click on 'x'. To edit its data, click on e.
-<br /><br />
-You can use 'Basic>Combine several clips' datapack. In the dialog window select all streams that you'd like to put into a single object, then close the window. You'll see that all of your selected streams turned into a single object. If you'd like to edit them, right-click the blue rectangle while having composed stream selected, and click on 'streams multi-stream sequence'. Then you'll enter the composition. To return, simply click on 'Go to root composition' button. You can have as many overlayed compositions as you want to.
-<br /><br />
-To export the clip, use upper 'Export button', and fill in all the required forms. There also is a thing called 'Prewiev exporting' - the button near the 'Play/pause' button exports only the composition you're in, without exporting the sound. During export process the editor may freeze.
-# not using linux?
-Change some values in 'constants.py' file!
+To add the new stream, click the 'Add' button and select it, or select it from the area on the right; then fill in all the inputs.
+<br />
+To edit the current streams or any of its children/parents inputs, use the menu on the left. The 'e' button will open an editor that'll allow you to adit any input or to change the current streams/parents name. The 'X' will allow you todelete the parent, but never the furthest child in the stack.
+<br />
+To reorder streams use the buttor under the big redd cross on the right of the streams area. To delete the stream, use that red cross. To export the whole file, use the 'Export' button in the menu. The button under the preview, near the play button, will allow you to export the currently open composition image-only. To create the included composition use the 'Basic>Combine several clips', and click on the 'Multi stream sequence' input to open it. Use 'Go to root composition' button to exit it.
