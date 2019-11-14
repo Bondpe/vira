@@ -10,6 +10,8 @@ class Posterize(structure.Basic):
     argtype = {'levels':inputs.Integer, 'child':'c'}
     def get(self, time, b):
         a = self.args['child'].get(time, b)
+        if a is None:
+            return None
         image = Image.fromarray(a)
         result = image.convert('P', palette=Image.ADAPTIVE, colors=self.args['levels'].num).convert('RGB')
         a = np.asarray(result)
