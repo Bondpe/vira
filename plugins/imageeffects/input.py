@@ -101,6 +101,14 @@ class Time:
         return Time(time)
     def __str__(self):
         return 'KeyTime(%f seconds)'%self.time
+class Float:
+    def __init__(self, i=0):
+        self.float = i
+    def get(*args, **kwargs):
+        i = simpledialog.askfloat('enter %s'%kwargs.get('name', 'value'), 'enter %s'%kwargs.get('name', 'value'))
+        return Float(i)
+    def __str__(self):
+        return str(self.float)
 class AlphaPercent:
     def __init__(self, alpha=1):
         self.alpha = alpha
@@ -120,26 +128,68 @@ class Percent:
 class Integer:
     def __init__(self, num=1):
         self.num = num
-    def display(self,cvs,x,y):
-        cvs.create_rectangle(x,y,x-50,y+25,fill='white')
-        cvs.create_text(x-50,y+12,anchor='w',text=str(self.num),fill='blue')
-        cvs.create_polygon(x-17,y+10,x-3,y+10,x-10,y+1, fill='black')
-        cvs.create_polygon(x-17,y+15,x-3,y+15,x-10,y+24,fill='black')
-    def get(*args, **kwargs):
-        if kwargs.get('clickdata',None)!=None:
-            if kwargs.get('clickdata',None)['x'] > 480:
-                if kwargs.get('clickdata',None)['y']<=12:
-                    return Integer(kwargs['old'].num+1)
+        self.pointer = 0
+    def dialog(self,data):
+        if data['action'] == 'get dialog height':
+            return 25
+        if data['action'] == 'display':
+            a = list(str(self.num))
+            a.insert(len(a)-self.pointer, '|')
+            a = ''.join(a)
+            cvs = data['canvas']
+            x,y = data['pos']
+            cvs.create_rectangle(x,y,x-50,y+25,fill='white')
+            cvs.create_text(x-50,y+12,anchor='w',text=a,fill='blue')
+            cvs.create_polygon(x-17,y+10,x-3,y+10,x-10,y+1, fill='black')
+            cvs.create_polygon(x-17,y+15,x-3,y+15,x-10,y+24,fill='black')
+        if data['action'] == 'click':
+            if data['x'] < 20:
+                if data['y']<=12:
+                    self.num+=1
                 else:
-                    return Integer(kwargs['old'].num-1)
+                    self.num-=1
+            else:
+                n = simpledialog.askinteger('reenter', 'reenter')
+                if n is not None: self.num = n
+        if data['action'] == 'key':
+            try:
+                a = list(str(self.num))
+                a.insert(len(a)-self.pointer, str(int(data['key'][0])))
+                self.num=int(''.join(a))
+            except:
+                if data['key'][2] == 113:
+                    self.pointer+=1
+                elif data['key'][2] == 114:
+                    self.pointer-=1
+                elif data['key'][2] == 22:
+                    a = list(str(self.num))
+                    del a[len(a)-self.pointer-1]
+                    self.num=int(''.join(a))
+    def get(*args, **kwargs):
         num = simpledialog.askinteger('enter %s'%kwargs.get('name', 'value'), 'enter %s'%kwargs.get('name', 'value'))
         return Integer(num)
     def __str__(self):
         return 'Integer(%d)'%self.num
+class Bool:
+    def __init__(self, bool=True):
+        self.bool = bool
+    def dialog(self,data):
+        if data['action']=='click':
+            self.bool=not self.bool
+        elif data['action'] == 'display':
+            cvs = data['canvas']
+            x,y = data['pos']
+            cvs.create_rectangle(x-10,y+10,x-15,y+15,fill='white')
+            if self.bool:
+                cvs.create_text(x-12,y+12,text='v',fill='green')
+    def get(*args, **kwargs):
+        return Bool()
+    def __str__(self):
+        return str(self.bool)
 class MixModes:
+    modes = {'alpha':(lambda a,b,h: a*h+b*(1-h)), 'add':(lambda a,b,h: a*h+b), 'substract':(lambda a,b,h:b-a*h), 'multiply':(lambda a,b,h: a**h*b**(1-h)), 'dissolve':(lambda a,b,h: random.choice([a]*int(h*100)+[b]*int((1-h)*100))), 'screen':(lambda a,b,h:1-((1-a)**h*(1-b)**(1-h))), 'overlay':(lambda a,b,h: ((a**h*b**(1-h))*(a<0.5)+(1-((1-a)**h*(1-b)**(1-h))))*(a>=0.5)), 'divide':(lambda a,b,h: (a**h)/(b**(1-h))), 'alpha_substract':(lambda a,b,h:a*h-b*(1-h)), 'difference':(lambda a,b,h:abs(a*h-b*(1-h)))}
     def __init__(self, mode='add'):
-        self.modes = {'alpha':(lambda a,b,h: a*h+b*(1-h)), 'add':(lambda a,b,h: a*h+b), 'substract':(lambda a,b,h:b-a*h), 'multiply':(lambda a,b,h: a**h*b**(1-h)), 'dissolve':(lambda a,b,h: random.choice([a]*int(h*100)+[b]*int((1-h)*100))), 'screen':(lambda a,b,h:1-((1-a)**h*(1-b)**(1-h))), 'overlay':(lambda a,b,h: ((a**h*b**(1-h))*(a<0.5)+(1-((1-a)**h*(1-b)**(1-h))))*(a>=0.5)), 'divide':(lambda a,b,h: (a**h)/(b**(1-h))), 'alpha_substract':(lambda a,b,h:a*h-b*(1-h)), 'difference':(lambda a,b,h:abs(a*h-b*(1-h)))}
-        self.mode = self.modes[mode]
+#        self.mode = self.modes[mode] # saving bug
         self.name = mode
     def get(*args, **kwargs):
         modes = {'alpha':(lambda a,b,h: a*h+b*(1-h)), 'add':(lambda a,b,h: a*h+b), 'substract':(lambda a,b,h:b-a*h), 'multiply':(lambda a,b,h: a**h*b**(1-h)), 'dissolve':(lambda a,b,h: random.choice([a]*int(h*100)+[b]*int((1-h)*100))), 'screen':(lambda a,b,h:1-((1-a)**h*(1-b)**(1-h))), 'overlay':(lambda a,b,h: ((a**h*b**(1-h))*(a<0.5)+(1-((1-a)**h*(1-b)**(1-h))))*(a>=0.5)), 'divide':(lambda a,b,h: (a**h)/(b**(1-h))), 'alpha_substract':(lambda a,b,h:a*h-b*(1-h)), 'difference':(lambda a,b,h:abs(a*h-b*(1-h)))}
@@ -166,21 +216,21 @@ class MixModes:
     def run(self, a, b, h,t=0):
         random.seed(t)
         def apply(a,b,h):
-            a = self.mode(a/256,b/256,h)
+            a = self.modes[self.name](a/256,b/256,h)
             if a > 1:
                 a = 1
             if a < 0:
                 a = 0
             return int(a*256)
         if self.name not in ['dissolve']:
-            return self.mode(a/256,b/256,h)*256
+            return self.modes[self.name](a/256,b/256,h)*256
         return np.vectorize(apply)(a,b,h)
     def __str__(self):
         return 'Mix%s()'%self.name.capitalize()
 class LayerModes:
+    modes = {'add':(lambda a,b: a+b), 'multiply':(lambda a,b: a*b), 'screen':(lambda a,b:1-((1-a)*(1-b))), 'overlay':(lambda a,b: ((a*b)*(a < 0.5)+(1-((1-a)*(1-b))))*(a <= 0.5)), 'divide':(lambda a,b: a/b), 'substract':(lambda a,b:a-b), 'difference':(lambda a,b:abs(a-b)), 'lighten only':(lambda a,b:np.maximum(a,b)), 'darken only':(lambda a,b:np.minimum(a,b))}
     def __init__(self, mode='add'):
-        self.modes = {'add':(lambda a,b: a+b), 'multiply':(lambda a,b: a*b), 'screen':(lambda a,b:1-((1-a)*(1-b))), 'overlay':(lambda a,b: ((a*b)*(a < 0.5)+(1-((1-a)*(1-b))))*(a <= 0.5)), 'divide':(lambda a,b: a/b), 'substract':(lambda a,b:a-b), 'difference':(lambda a,b:abs(a-b)), 'lighten only':(lambda a,b:np.maximum(a,b)), 'darken only':(lambda a,b:np.minimum(a,b))}
-        self.mode = self.modes[mode]
+#        self.mode = self.modes[mode] # saving bug
         self.name = mode
     def get(*args, **kwargs):
         modes = {'add':(lambda a,b: a+b), 'multiply':(lambda a,b: a*b), 'screen':(lambda a,b:1-((1-a)*(1-b))), 'overlay':(lambda a,b: ((a*b)*(a < 0.5)+(1-((1-a)*(1-b))))*(a <= 0.5)), 'divide':(lambda a,b: a/b), 'substract':(lambda a,b:a-b), 'difference':(lambda a,b:abs(a-b)), 'lighten only':(lambda a,b:np.maximum(a,b)), 'darken only':(lambda a,b:np.minimum(a,b))}
@@ -205,7 +255,7 @@ class LayerModes:
         tk.destroy()
         return LayerModes(name)
     def run(self, a, b):
-        return self.mode(a/256,b/256)*256
+        return self.modes[self.name](a/256,b/256)*256
     def __str__(self):
         return 'Layer%s()'%self.name.capitalize()
 class TimeSegment:
@@ -380,7 +430,7 @@ class PointArray:
                 time = evt.x/25
             else:
                 display.append((evt.x, evt.y))
-                out.append((int(evt.x/1000*size[0]), int(evt.y/500*size[1])))
+                out.append((int((evt.x/1000)*size[1]), int((evt.y/500)*size[0])))
         canvas.bind('<Button-1>', click)
         while not finished:
             update()

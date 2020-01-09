@@ -48,14 +48,14 @@ class Name:
     def get(*args, **kwargs):
         tk = Tk()
         tk.title('choose name')
-        canvas = Canvas(tk, width=500, height=len(data)*30+30)
+        canvas = Canvas(tk, width=500, height=len(data)*30+30, bg=constants.theme['bg'])
         canvas.pack()
         names = list(data.keys())
         i = 0
         for n in names:
-            canvas.create_text(250, i*30+15, text=n)
+            canvas.create_text(250, i*30+15, text=n, fill=constants.theme['fg'])
             i += 1
-        canvas.create_text(250, len(data)*30+15, text='new', fill='green')
+        canvas.create_text(250, len(data)*30+15, text='new', fill=constants.theme['mark'])
         name = None
         def end(evt):
             nonlocal name

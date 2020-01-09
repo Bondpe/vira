@@ -4,12 +4,12 @@ from tkinter import *
 import structure
 import input as inputs
 
-def disp(cvs,fun):
-    cvs.delete('all')
+def disp(cvs,fun,sx=0,sy=0):
     x = np.linspace(0,255,256)
     y = fun(x/256)*256
+    cvs.create_rectangle(0+sx,256+sy,256+sx,0+sy,fill='white')
     for p in range(255):
-        cvs.create_line(p,256-y[p-1],p+1,256-y[p])
+        cvs.create_line(p+sx,256-y[p-1]+sy,p+1+sx,256-y[p]+sy)
 
 class Curve_256x256:
     def __init__(self,fun,points,interp,name):
@@ -71,12 +71,56 @@ class Curve_256x256:
         cvs.bind('<Button-1>',cl)
         try:
             while True:
+                cvs.delete('all')
                 disp(cvs,fun[-1])
                 for x,y in points:
                     cvs.create_oval(x-3,253-y,x+3,259-y,fill='green')
                 cvs.update()
         except:
             return Curve_256x256(fun[-1],points,chosen.get(),kwargs.get('name','curve'))
+    def dialog(self,data):
+        if data['action'] == 'get dialog height':
+            return 256
+        if data['action'] == 'display':
+            cvs = data['canvas']
+            x,y = data['pos']
+            x-=256
+            disp(cvs,self.fun,x,y)
+            for xp,yp in self.points:
+                px,py=xp+x,y-yp
+                cvs.create_oval(px-3,253+py,px+3,259+py)
+            cvs.create_rectangle(200,y,500-256,y+50,fill='white')
+            cvs.create_text(210,y+25,text='clear',anchor='w')
+            cvs.create_rectangle(200,y+100,500-256,y+50,fill='white')
+            cvs.create_text(210,y+75,text='kind',anchor='w')
+            cvs.create_text(210,y+90,text=self.interp,font=('Ariel',5))
+        if data['action']=='click':
+            if data['x'] > 256:
+                if data['x'] < 300:
+                    if data['y']<50:
+                        self.points = [[0,0],[255,255]]
+                    elif data['y']<100:
+                        kinds = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'previous', 'next']
+                        interp = kinds[kinds.index(self.interp)-1]
+                        try:
+                            x = []
+                            y = []
+                            for point in self.points:
+                                x.append(point[0])
+                                y.append(point[1])
+                            self.fun=interp1d(np.array(x)/256,np.array(y)/256,kind=interp)
+                            self.interp = interp
+                            return
+                        except:
+                            pass
+            else:
+                self.points.append([256-data['x'],256-data['y']])
+            x = []
+            y = []
+            for point in self.points:
+                x.append(point[0])
+                y.append(point[1])
+            self.fun = interp1d(np.array(x)/256,np.array(y)/256,kind=self.interp)
 
 class ColorGrade(structure.Basic):
     category='color manipulation'

@@ -94,6 +94,16 @@ class Black(Basic):
     def get(self, time, input):
         return np.zeros((self.args['resolution'].y, self.args['resolution'].x, 3))
 
+class Invisible(Basic):
+    Tname = 'toggle visibility'
+    argnames = {'child':None,'visible':None}
+    argtype = {'child':'c','visible':input.Bool}
+    category = 'Basic'
+    def get(self, time, input):
+        if self.args['visible'].bool:
+            return self.args['child'].get(time, input)
+        return input
+
 class ColorMatte(Basic):
     category = 'Basic'
     Tname = 'filled background'
@@ -164,9 +174,9 @@ class ColorKey(Basic):
         if a is not None and bg is not None:
             a,bg = matchImageSize(a,bg)
             r,g,b = a[:,:,0], a[:,:,1], a[:,:,2]
-            R = np.int_(abs(r-self.args['Color'].color[0])>(256-self.args['treshold'].num))
-            G = np.int_(abs(g-self.args['Color'].color[1])>(256-self.args['treshold'].num))
-            B = np.int_(abs(b-self.args['Color'].color[2])>(256-self.args['treshold'].num))
+            R = np.int_(abs(r-self.args['Color'].color[0])>(self.args['treshold'].num))
+            G = np.int_(abs(g-self.args['Color'].color[1])>(self.args['treshold'].num))
+            B = np.int_(abs(b-self.args['Color'].color[2])>(self.args['treshold'].num))
             key = (R+G+B)==3
 ##            key = a-np.array(self.args['Color'].color)>self.args['treshold'].num
 ##            key = np.int_(key)
@@ -188,6 +198,24 @@ class ColorKey(Basic):
         if self.args['Color'].color[2] == 0:
             self.args['Color'].color[2] = 1
             self.args['Color'].b = 1
+class ColorMask(Basic):
+    category = 'Combine'
+    Tname = 'colorkey mask'
+    argnames = {'child':None,'Color':None, 'treshold':None}
+    argtype = {'child':'c','Color':input.Color, 'treshold':input.Integer}
+    def get(self, time, bg):
+        a = self.args['child'].get(time, bg)
+        if a is not None:
+            r,g,b = a[:,:,0], a[:,:,1], a[:,:,2]
+            R = np.int_(abs(r-self.args['Color'].color[0])>(self.args['treshold'].num))
+            G = np.int_(abs(g-self.args['Color'].color[1])>(self.args['treshold'].num))
+            B = np.int_(abs(b-self.args['Color'].color[2])>(self.args['treshold'].num))
+            key = (R+G+B)==3
+            key = key.repeat(3,1).reshape(*key.shape+(3,))
+            return np.int_(key)*255
+        return a
+    def getStartEnd(self):
+        return self.args['child'].getStartEnd()
 
 class LinearFadeIn(Basic):
     category = 'Timing'
@@ -254,6 +282,8 @@ class QuickVideo(Basic):
     argnames = {'file':None}
     argtype = {'file':datamanagement.Name}
     def get(self, time, input):
+        if time < 0:
+            return None
         frame = int(time*self.fps)
         if frame >= self.frames:
             return None
@@ -281,6 +311,8 @@ class Video(Basic):
     argnames = {'file':None}
     argtype = {'file':datamanagement.Name}
     def get(self, time, input):
+        if time < 0:
+            return None
         frame = int(time*self.fps)
         if frame >= self.frames:
             return None
@@ -321,6 +353,8 @@ class TVideo(Basic):
     argnames = {'file':None}
     argtype = {'file':datamanagement.Name}
     def get(self, time, input):
+        if time < 0:
+            return None
         frame = int(time*self.fps)
         if frame >= self.frames:
             return None
@@ -404,6 +438,7 @@ class Mask(Basic):
                 im = im.filter(ImageFilter.GaussianBlur(radius=self.args['blur'].num)).resize(size)
                 mask = np.asarray(im)
                 self.masks[size] = mask
+                print('new')
             return a*(mask/255)+b*(1-mask/255)
         return a
     def setup(self):
@@ -459,4 +494,4 @@ class GhostPaste(Basic):
         return a
 
 
-avaliable = [Black, ColorMatte, CropMove, Video, QuickVideo, Img, Alpha, LinearFadeIn, LinearFadeOut, TVideo, Mask, Paste, Layer, GhostPaste, ColorKey, Composition]
+avaliable = [Black, ColorMatte, CropMove, Video, QuickVideo, Img, Alpha, LinearFadeIn, LinearFadeOut, TVideo, Mask, Paste, Layer, GhostPaste, ColorKey, Composition, Invisible, ColorMask]
